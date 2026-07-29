@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>JS mechanism drill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#161310; --panel:#1E1A15; --panel-raised:#24201A;
+    --amber:#D68A45; --amber-dim:#8A5B2C;
+    --teal:#5EAFA0; --teal-dim:#3A6E64;
+    --coral:#D9695A; --coral-dim:#8A4038;
+    --text:#EDE4D3; --text-dim:#A69C8C; --text-faint:#6E6656;
+    --border:#332C22;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif; line-height:1.6;
+    padding:2.5rem 1.25rem 4rem; min-height:100vh;
+  }
+  .wrap{max-width:680px; margin:0 auto;}
+  .top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.5rem;}
+  .title{font-family:'IBM Plex Mono', monospace; font-size:13px; letter-spacing:0.06em; color:var(--text-dim); text-transform:uppercase;}
+  .title b{color:var(--amber);}
+  .sp{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--text-faint);}
+  .score-pill{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--teal); border:1px solid var(--teal-dim); border-radius:3px; padding:2px 8px;}
+  .track{height:3px; background:var(--panel); border-radius:2px; margin:0.75rem 0 2rem; overflow:hidden;}
+  .track-fill{height:100%; background:var(--amber); transition:width 0.35s ease;}
+
+  .stack{display:flex; flex-direction:column-reverse; gap:6px; margin-bottom:1.5rem;}
+  .frame-collapsed{
+    background:var(--panel); border:1px solid var(--border); border-radius:4px;
+    padding:8px 12px; font-family:'IBM Plex Mono', monospace; font-size:12px;
+    display:flex; justify-content:space-between; align-items:center; opacity:0.55;
+  }
+  .frame-collapsed.correct{border-left:3px solid var(--teal);}
+  .frame-collapsed.wrong{border-left:3px solid var(--coral);}
+  .frame-collapsed .tag{color:var(--text-faint);}
+  .frame-collapsed .mark{font-weight:600;}
+  .frame-collapsed.correct .mark{color:var(--teal);}
+  .frame-collapsed.wrong .mark{color:var(--coral);}
+
+  .frame-active{
+    background:var(--panel-raised); border:1px solid var(--amber-dim); border-radius:6px;
+    padding:1.5rem; animation:push 0.3s ease;
+  }
+  @keyframes push{from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:translateY(0);}}
+  .path{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--amber); margin-bottom:0.9rem;}
+  .prompt{font-size:16px; margin:0 0 1rem; color:var(--text);}
+  pre{
+    background:var(--bg); border:1px solid var(--border); border-radius:4px;
+    padding:0.9rem 1rem; overflow-x:auto; font-family:'IBM Plex Mono', monospace;
+    font-size:13px; line-height:1.55; color:#D8CFC0; margin:0 0 1.2rem;
+  }
+  .options{display:flex; flex-direction:column; gap:8px; margin-bottom:1rem;}
+  .opt{
+    text-align:left; background:var(--panel); border:1px solid var(--border); color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif; font-size:14px; padding:10px 14px; border-radius:4px;
+    cursor:pointer; transition:border-color 0.15s;
+  }
+  .opt:hover{border-color:var(--amber-dim);}
+  .opt.selected-correct{border-color:var(--teal); background:rgba(94,175,160,0.12); color:var(--teal);}
+  .opt.selected-wrong{border-color:var(--coral); background:rgba(217,105,90,0.12); color:var(--coral);}
+  .opt.reveal-correct{border-color:var(--teal); color:var(--teal);}
+  .opt:disabled{cursor:default;}
+
+  .explain{
+    margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);
+    font-size:14px; color:var(--text-dim); display:none;
+  }
+  .explain.show{display:block;}
+  .explain b{color:var(--text);}
+  .mech-label{font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:var(--amber); margin-bottom:6px; display:block;}
+
+  .next-btn{
+    margin-top:1.2rem; background:var(--amber); color:#221604; border:none; border-radius:4px;
+    font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600; padding:9px 18px;
+    cursor:pointer; display:none;
+  }
+  .next-btn.show{display:inline-block;}
+  .next-btn:hover{background:#E29A55;}
+
+  .final{
+    background:var(--panel-raised); border:1px solid var(--amber-dim); border-radius:6px;
+    padding:2rem; text-align:center;
+  }
+  .final .num{font-family:'IBM Plex Mono', monospace; font-size:40px; color:var(--amber); margin:0.5rem 0;}
+  .final p{color:var(--text-dim); font-size:14px; margin:0.25rem 0;}
+  .restart{
+    margin-top:1.3rem; background:transparent; color:var(--text); border:1px solid var(--border);
+    border-radius:4px; font-family:'IBM Plex Mono', monospace; font-size:13px; padding:9px 18px; cursor:pointer;
+  }
+  .restart:hover{border-color:var(--amber-dim);}
+  .sr-only{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0);}
+</style>
+</head>
+<body>
+<h2 class="sr-only">Interactive quiz testing JavaScript mechanism understanding across 15 unseen scenario questions, styled as a debugger call stack.</h2>
+<div class="wrap">
+  <div class="top">
+    <div class="title">js mechanism drill · <b>unseen variants</b></div>
+    <div class="score-pill" id="scorePill">0 / 15</div>
+  </div>
+  <div class="sp" id="spLabel">SP → frame 1 / 15</div>
+  <div class="track"><div class="track-fill" id="trackFill" style="width:6.6%"></div></div>
+
+  <div class="stack" id="stack"></div>
+  <div id="finalArea"></div>
+</div>
+
+<script>
+const Q = [
+  {
+    tag: "ch01/engine.js:214",
+    prompt: "A function is called thousands of times with numeric arguments and gets JIT-optimized. Then, once, it's called with a string argument by mistake. What happens on that one call, and the next call after it?",
+    code: null,
+    options: [
+      "Nothing — V8 silently coerces the string and keeps using the optimized code",
+      "V8 deoptimizes, falls back to the interpreter for that call, and reprofiles before optimizing again",
+      "The program crashes immediately with a fatal type error",
+      "V8 permanently blacklists the function from ever being optimized again"
+    ],
+    correct: 1,
+    mech: "Deoptimization (bailout)",
+    explain: "TurboFan's optimized machine code is built on <b>type assumptions</b> gathered during profiling. The moment a call violates one (a string where only numbers were ever seen), V8 can't safely keep running the specialized code — it <b>deoptimizes</b>, discarding the optimized version and falling back to Ignition's slower, generic interpretation for that call. It then reprofiles from there, and can re-optimize later if the new pattern stabilizes. This is not a crash and not permanent — it's a controlled, deliberate safety fallback."
+  },
+  {
+    tag: "ch02/scope.js:41",
+    prompt: "Predict the output:",
+    code: `function outer() {
+  console.log(count);
+  if (false) { var count = 10; }
+}
+outer();`,
+    options: ["10", "undefined", "ReferenceError", "SyntaxError"],
+    correct: 1,
+    mech: "var hoisting through unreachable branches",
+    explain: "<b>var is function-scoped, not block-scoped</b> — the creation phase hoists <code>var count</code> to the top of the whole function regardless of which branch it's textually inside, even one that never executes. So <code>count</code> exists as <code>undefined</code> at the console.log line, because its declaration was registered ahead of time, even though the assignment (<code>= 10</code>) is inside a dead <code>if(false)</code> block and never runs."
+  },
+  {
+    tag: "ch03/this.js:88",
+    prompt: "Predict the output:",
+    code: `const timer = {
+  seconds: 0,
+  start() {
+    setInterval(function () { this.seconds++; }, 1000);
+  }
+};
+timer.start();
+// after 3 seconds, what is timer.seconds?`,
+    options: ["3", "0 — it never increments", "NaN", "undefined"],
+    correct: 1,
+    mech: "this in a plain function callback",
+    explain: "The callback passed to <code>setInterval</code> is a <b>regular function</b>, not an arrow function, so it gets its own <code>this</code> determined by how IT is called — not by where it's written. setInterval invokes it as a bare function call (default binding), so <code>this</code> is <code>undefined</code> (strict) or the global object, never <code>timer</code>. <code>this.seconds++</code> either throws quietly-ignored errors or increments a stray global property — <code>timer.seconds</code> itself stays 0. The fix is an arrow function, which lexically inherits <code>this</code> from <code>start()</code>'s scope."
+  },
+  {
+    tag: "ch04/proto.js:53",
+    prompt: "Predict the output:",
+    code: `function Widget() {}
+Widget.prototype.tags = ["default"];
+const a = new Widget();
+const b = new Widget();
+a.tags.push("special");
+console.log(b.tags);`,
+    options: ['["default"]', '["default", "special"]', "undefined", "TypeError"],
+    correct: 1,
+    mech: "Shared mutable state on a prototype",
+    explain: "<code>Widget.prototype.tags</code> is <b>one single array</b>, and every instance's [[Prototype]] link points to the same prototype object. Neither <code>a</code> nor <code>b</code> has its own <code>tags</code> property — both resolve the lookup up the chain to the identical shared array. Mutating it (<code>.push</code>, not reassignment) through <code>a</code> is visible through <code>b</code> too. This is why mutable state belongs in the constructor as an own property, not on the prototype."
+  },
+  {
+    tag: "ch05/classes.js:130",
+    prompt: "Predict the output:",
+    code: `class Base {
+  greet() { return "base"; }
+}
+class Derived extends Base {
+  greet() { return super.greet() + "-derived"; }
+}
+class Grand extends Derived {}
+console.log(new Grand().greet());`,
+    options: ['"base"', '"base-derived"', '"derived"', "TypeError — Grand must define greet"],
+    correct: 1,
+    mech: "Prototype chain lookup skips levels with no own method",
+    explain: "<code>Grand</code> defines no <code>greet</code> of its own, so calling it on a <code>Grand</code> instance walks the [[Prototype]] chain: <code>Grand.prototype</code> (nothing own) → <code>Derived.prototype</code> (found). That method runs <code>super.greet()</code>, which specifically looks up from <code>Derived.prototype</code>'s own [[Prototype]] — i.e. <code>Base.prototype</code> — regardless of what Grand's own chain looks like, returning <code>\"base\"</code>, then appends <code>\"-derived\"</code>. Subclassing without overriding a method is completely valid — the chain just keeps walking."
+  },
+  {
+    tag: "ch06/loop.js:204",
+    prompt: "Predict the exact print order:",
+    code: `console.log(1);
+queueMicrotask(() => console.log(2));
+setTimeout(() => console.log(3), 0);
+Promise.resolve().then(() => console.log(4));
+console.log(5);`,
+    options: ["1, 5, 2, 4, 3", "1, 5, 4, 2, 3", "1, 2, 4, 5, 3", "1, 5, 3, 2, 4"],
+    correct: 0,
+    mech: "queueMicrotask and .then share one microtask queue, in scheduling order",
+    explain: "Sync code runs first: <b>1, 5</b>. Then the microtask queue drains completely before any macrotask — and <code>queueMicrotask</code> and Promise <code>.then</code> both feed the <b>same</b> microtask queue, in the order they were scheduled: <code>queueMicrotask(...2...)</code> was called before <code>Promise.resolve().then(...4...)</code>, so <b>2</b> runs before <b>4</b>. Only after both microtasks finish does the macrotask queue get a turn: <b>3</b> last."
+  },
+  {
+    tag: "ch07/leak.js:77",
+    prompt: "A component repeatedly does `const key = {}; cache.set(key, data);` on every render, using a plain Map as a per-component cache keyed by a freshly created object each time. What's the concrete consequence over many renders?",
+    code: null,
+    options: [
+      "Nothing — Map automatically evicts old entries",
+      "The cache grows unboundedly since every key is a unique object a Map holds strongly, even though nothing else ever references those keys again",
+      "It throws a TypeError since objects can't be Map keys",
+      "It behaves identically to using a WeakMap"
+    ],
+    correct: 1,
+    mech: "Strong references in Map vs. weak references in WeakMap",
+    explain: "A regular <code>Map</code> holds a <b>strong reference</b> to every key ever inserted — even after the component's local <code>key</code> variable goes out of scope and nothing else in the program can reach that object, the Map itself keeps it (and its cache entry) alive forever, since reachability is being granted BY the cache. This is a textbook memory leak. A <code>WeakMap</code> would hold the key weakly, letting the entry be collected once nothing else references it — but here, freshly creating a new key object every render defeats even a WeakMap's caching purpose, since no later lookup could ever match a *new* object anyway. The real fix is a stable, reusable key, not swapping container types."
+  },
+  {
+    tag: "ch08/modules.js:19",
+    prompt: "A bundler tree-shakes an ES module that exports 20 functions but only 2 are imported anywhere. What's required for the bundler to safely remove the other 18?",
+    code: null,
+    options: [
+      "Nothing extra — ESM's static import/export structure alone is always sufficient",
+      "The module must also have no top-level side-effecting code (or declare sideEffects: false), otherwise the bundler must conservatively keep everything",
+      "The functions must be arrow functions, not function declarations",
+      "Tree shaking requires TypeScript, not plain JavaScript"
+    ],
+    correct: 1,
+    mech: "Static analyzability is necessary but not sufficient for tree shaking",
+    explain: "ESM's static <code>import</code>/<code>export</code> structure is what makes it POSSIBLE to determine which exports are used — but a bundler still can't safely delete unused code if the module has <b>top-level side effects</b> (code that runs just by importing the module, like registering something globally), since deleting it could change observable behavior even if nothing named is imported from it. That's exactly what <code>\"sideEffects\": false</code> in package.json communicates to the bundler: 'it's safe to assume nothing here matters unless explicitly imported.' Static structure and side-effect-freedom are two separate requirements, both needed."
+  },
+  {
+    tag: "ch09/errors.js:66",
+    prompt: "Predict the output:",
+    code: `function run() {
+  try {
+    try {
+      throw new Error("inner");
+    } finally {
+      console.log("A");
+    }
+  } catch (e) {
+    console.log("B:", e.message);
+  }
+}
+run();`,
+    options: ['A, then B: inner', 'B: inner, then A', 'Only A — the error is swallowed', 'Only B: inner'],
+    correct: 0,
+    mech: "finally runs during unwinding, before the exception continues propagating",
+    explain: "The inner <code>try</code> throws — <code>finally</code> is guaranteed to run <b>during the unwind</b>, before the exception is allowed to keep propagating outward, so <b>A</b> prints first. Since this inner <code>finally</code> block does NOT contain its own <code>return</code> or <code>throw</code> that would override the pending exception, the original error continues propagating upward after finally completes, and is caught by the outer <code>catch</code>, printing <b>B: inner</b> second. Contrast this with the classic gotcha where a <code>return</code> inside finally would have silently swallowed the exception entirely."
+  },
+  {
+    tag: "ch10/proxy.js:102",
+    prompt: "You wrap an object in a Proxy with only a `get` trap defined (no `has` trap). What happens when someone checks `'key' in proxiedObject`?",
+    code: null,
+    options: [
+      "It throws, since Proxy requires every trap to be explicitly defined",
+      "It falls through to the target object's default 'in' behavior automatically",
+      "It always returns false regardless of the target",
+      "It silently returns undefined instead of a boolean"
+    ],
+    correct: 1,
+    mech: "Untrapped operations fall through to default behavior on the target",
+    explain: "Each Proxy trap intercepts one specific fundamental operation independently — <code>get</code> only intercepts property reads, not the <code>in</code> operator (which is governed by the separate <code>has</code> trap). Any operation whose trap you don't define simply <b>falls through to the target object's own default behavior</b>, unmodified — Proxy doesn't require you to implement every trap, only the ones whose behavior you actually want to customize. This is exactly why the readOnly-object exercise (Ch.10) needed THREE separate traps (set, deleteProperty, defineProperty) — leaving any one out would silently allow that specific operation through untouched."
+  },
+  {
+    tag: "ch11/perf.js:145",
+    prompt: "A search input calls an API on every keystroke, debounced at 300ms. The user types quickly, then the network is slow and an early request's response arrives AFTER a later request's response. What's the risk, and what fixes it?",
+    code: null,
+    options: [
+      "No risk — debounce alone guarantees requests always resolve in order",
+      "A stale, older response can overwrite the UI with outdated results after a newer, correct response already rendered — fixed with AbortController to cancel superseded requests",
+      "The browser automatically discards out-of-order responses",
+      "This can only be fixed by switching from debounce to throttle"
+    ],
+    correct: 1,
+    mech: "Debounce controls WHEN a request fires, not the order responses ARRIVE in",
+    explain: "Debounce only limits how often a NEW request is initiated — it does nothing to guarantee that in-flight requests resolve in the order they were sent, since network timing is outside JS's control. If an earlier (now-irrelevant) request happens to finish after a newer one, its callback can overwrite the UI with stale data, a race condition. The fix is <code>AbortController</code>: cancel the previous in-flight request the moment a new one is about to be sent, so a stale request's response either never arrives or is explicitly ignored via its abort signal — this combines Ch.6's async cancellation with Ch.11's debounce, exactly the kind of cross-chapter connection worth being fluent in."
+  },
+  {
+    tag: "ch06/promise.js:301",
+    prompt: "Predict the output:",
+    code: `Promise.race([
+  new Promise(res => setTimeout(() => res("slow"), 100)),
+  Promise.reject("fast-fail")
+]).then(v => console.log("resolved:", v))
+  .catch(e => console.log("rejected:", e));`,
+    options: ['resolved: slow', 'rejected: fast-fail', 'resolved: fast-fail', 'Nothing logs — race requires all promises to resolve'],
+    correct: 1,
+    mech: "Promise.race settles on the FIRST settlement, resolve or reject",
+    explain: "<code>Promise.race</code> settles as soon as the FIRST input promise settles — and settling includes <b>rejection</b>, not just resolution (that distinction is specifically what separates <code>race</code> from <code>any</code>, which only cares about the first RESOLUTION and ignores rejections unless all reject). Here, <code>Promise.reject(\"fast-fail\")</code> is already rejected the instant the array is built, long before the 100ms timer fires — so the race settles immediately as a rejection, triggering the <code>.catch</code>, never reaching the slower resolving promise at all."
+  },
+  {
+    tag: "ch02/coerce.js:19",
+    prompt: "Predict the output:",
+    code: `console.log(1 < 2 < 3);
+console.log(3 > 2 > 1);`,
+    options: ["true, true", "true, false", "false, true", "SyntaxError on both lines"],
+    correct: 1,
+    mech: "Left-to-right operator associativity plus boolean-to-number coercion",
+    explain: "Both <code>&lt;</code> and <code>&gt;</code> are <b>left-associative</b>, so these evaluate as <code>(1 < 2) < 3</code> and <code>(3 > 2) > 1</code>. First: <code>1 < 2</code> is <code>true</code>, then <code>true < 3</code> coerces <code>true</code> to <code>1</code> via ToNumber, and <code>1 < 3</code> is <code>true</code>. Second: <code>3 > 2</code> is <code>true</code>, then <code>true > 1</code> coerces to <code>1 > 1</code>, which is <code>false</code>. This is a classic 'looks like mathematical chaining, isn't' trap — JS has no special chained-comparison syntax the way Python does."
+  },
+  {
+    tag: "ch03/closures.js:212",
+    prompt: "Predict the output:",
+    code: `function makeLoggers() {
+  const loggers = [];
+  for (let i = 0; i < 3; i++) {
+    loggers.push(() => console.log(i));
+  }
+  return loggers;
+}
+makeLoggers().forEach(fn => fn());`,
+    options: ["0, 1, 2", "3, 3, 3", "undefined, undefined, undefined", "0, 0, 0"],
+    correct: 0,
+    mech: "let creates a fresh per-iteration binding, captured independently by each closure",
+    explain: "Because the loop uses <code>let</code>, the spec creates a <b>new, independent binding of i for each iteration</b> — each closure pushed into <code>loggers</code> captures its own separate <code>i</code>, frozen at that iteration's value. This is the direct fix for the classic <code>var</code>-in-a-loop bug, where a single shared binding across all iterations means every closure logs the same final value (which would print <code>3, 3, 3</code> here if <code>var</code> were used instead)."
+  },
+  {
+    tag: "ch09/async-err.js:58",
+    prompt: "Predict what happens:",
+    code: `async function risky() {
+  throw new Error("boom");
+}
+risky();
+console.log("still running");`,
+    options: [
+      "The program crashes synchronously before 'still running' prints",
+      "'still running' prints, and the thrown error becomes an unhandled promise rejection (no try/catch or .catch present)",
+      "The error is silently discarded with no trace",
+      "It throws a SyntaxError since async functions can't use throw"
+    ],
+    correct: 1,
+    mech: "async functions convert thrown errors into promise rejections, not synchronous throws",
+    explain: "An <code>async function</code> ALWAYS returns a promise — a <code>throw</code> inside it doesn't propagate synchronously up the call stack the way a normal throw would; instead it causes the returned promise to <b>reject</b>. Since <code>risky()</code> is called here with no <code>.catch()</code> and not inside a <code>try/await/catch</code>, that rejection has nothing handling it — synchronous code after the call (<code>console.log(\"still running\")</code>) runs completely normally, and the rejection surfaces separately as an <b>unhandled promise rejection</b> (a console warning in browsers, a process warning/possible crash in Node), not a synchronous crash."
+  }
+];
+
+let idx = 0, score = 0, answered = false;
+const stackEl = document.getElementById('stack');
+const finalArea = document.getElementById('finalArea');
+
+function render() {
+  stackEl.innerHTML = '';
+  document.getElementById('spLabel').textContent = `SP → frame ${idx + 1} / ${Q.length}`;
+  document.getElementById('trackFill').style.width = ((idx) / Q.length * 100).toFixed(1) + '%';
+  document.getElementById('scorePill').textContent = `${score} / ${Q.length}`;
+
+  if (idx >= Q.length) {
+    document.getElementById('trackFill').style.width = '100%';
+    document.getElementById('spLabel').textContent = 'Stack unwound';
+    finalArea.innerHTML = `
+      <div class="final">
+        <div class="mech-label">drill complete</div>
+        <div class="num">${score} / ${Q.length}</div>
+        <p>${score === Q.length ? 'Every frame resolved correctly — full mechanism fluency.' : score >= Q.length * 0.7 ? 'Solid grasp — revisit the missed frames\' source chapters.' : 'Worth another pass through the linked chapters before your next mock interview.'}</p>
+        <button class="restart" onclick="restart()">Run again</button>
+      </div>`;
+    return;
+  }
+  finalArea.innerHTML = '';
+
+  const q = Q[idx];
+  const frame = document.createElement('div');
+  frame.className = 'frame-active';
+  frame.innerHTML = `
+    <div class="path">${q.tag}</div>
+    <div class="prompt">${q.prompt}</div>
+    ${q.code ? `<pre>${escapeHtml(q.code)}</pre>` : ''}
+    <div class="options" id="opts"></div>
+    <div class="explain" id="explain"><span class="mech-label">${q.mech}</span>${q.explain}</div>
+    <button class="next-btn" id="nextBtn">${idx === Q.length - 1 ? 'See results' : 'Next frame'} &rarr;</button>
+  `;
+  stackEl.appendChild(frame);
+
+  const optsEl = frame.querySelector('#opts');
+  answered = false;
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = opt;
+    btn.onclick = () => selectAnswer(i, q, optsEl);
+    optsEl.appendChild(btn);
+  });
+}
+
+function selectAnswer(i, q, optsEl) {
+  if (answered) return;
+  answered = true;
+  const correct = i === q.correct;
+  if (correct) score++;
+  [...optsEl.children].forEach((btn, bi) => {
+    btn.disabled = true;
+    if (bi === i && correct) btn.classList.add('selected-correct');
+    else if (bi === i && !correct) btn.classList.add('selected-wrong');
+    else if (bi === q.correct) btn.classList.add('reveal-correct');
+  });
+  document.getElementById('explain').classList.add('show');
+  document.getElementById('nextBtn').classList.add('show');
+  document.getElementById('scorePill').textContent = `${score} / ${Q.length}`;
+  document.getElementById('nextBtn').onclick = () => {
+    pushCollapsed(q, correct);
+    idx++;
+    render();
+  };
+}
+
+function pushCollapsed(q, correct) {
+  const div = document.createElement('div');
+  div.className = 'frame-collapsed ' + (correct ? 'correct' : 'wrong');
+  div.innerHTML = `<span class="tag">${q.tag}</span><span class="mark">${correct ? 'resolved' : 'missed'}</span>`;
+  stackEl.appendChild(div);
+}
+
+function restart() {
+  idx = 0; score = 0;
+  render();
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+render();
+</script>
+</body>
+</html>
