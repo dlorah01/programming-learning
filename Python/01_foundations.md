@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 0: Foundations"
+---
+
 # Python Mastery Course — Module 0: Foundations
 
 **Course map** (so you have the shape of what's coming): 0. Foundations → 1. Names/Objects/Mutability → 2. Numbers/Strings/Booleans/None → 3. Control Flow & Comprehensions → 4. Functions Deep Dive → 5. Closures & Decorators → 6. Generators/Iterators → 7. OOP & the Data Model → 8. Descriptors/Metaclasses → 9. Collections → 10. Error Handling & Context Managers → 11. Functional Tools (itertools/functools) → 12. Modules/Packaging/Envs → 13. Concurrency (threads/async/multiprocessing/GIL) → 14. Memory Model & GC → 15. Performance & Profiling → 16. Type Hints & Static Analysis → 17. Testing → 18. Production Engineering → 19. Interview Sprint (cumulative).

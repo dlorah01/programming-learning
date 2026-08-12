@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 12 — Compiler-Level Features: Decorators, Metadata, Mixins, Merging"
+---
+
 # Chapter 12 — Compiler-Level Features: Decorators, Metadata, Mixins, Merging
 
 ## 12.1 Decorators — Two Distinct Systems

@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 2 — Language Fundamentals"
+---
+
 # Chapter 2 — Language Fundamentals
 
 > Depends on: Ch.1 §1.4 (creation phase before execution) and §1.7 (execution model).

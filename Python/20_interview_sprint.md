@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 19: Interview Sprint (Full Q&A Reference)"
+---
+
 # Python Mastery Course — Module 19: Interview Sprint (Full Q&A Reference)
 
 This module is formatted as a **self-study reference**: every question is followed immediately by its answer and the technical reasoning behind it, so you can use it to test yourself (cover the answer, try to produce it, then check) or just read it straight through as a cumulative review of Modules 0–18. No new concepts — pure synthesis and retrieval practice.

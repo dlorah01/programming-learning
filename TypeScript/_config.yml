@@ -1,0 +1,13 @@
+title: TypeScript Mastery
+description: A complete, structured TypeScript curriculum — compiler internals, the type system, generics, advanced types, architecture, and a full interview reference.
+theme: minima
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# GitHub Pages builds with Jekyll automatically when this repo (or /docs folder)
+# is set as the Pages source in Settings → Pages. No build step needed.
+
+exclude:
+  - README.md

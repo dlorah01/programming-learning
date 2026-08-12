@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 8 — Modules"
+---
+
 # Chapter 8 — Modules
 
 > Depends on: Ch.1 §1.6 (browser vs. Node have historically had different module systems), Ch.6 (dynamic `import()` returns a Promise).

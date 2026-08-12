@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Exercise & Answer Key — Full Reference"
+---
+
 # Exercise & Answer Key — Full Reference
 
 This compiles every "Practical exercises" section from Chapters 1–11, plus the Chapter 12 self-assessment, with full model answers. Every answer includes not just the result/code but the **mechanism** behind it — the goal is that you could explain each one to an interviewer without reciting memorized lines, because you understand *why* it's true.

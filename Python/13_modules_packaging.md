@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 12: Modules, Packaging, and Environments"
+---
+
 # Python Mastery Course — Module 12: Modules, Packaging, and Environments
 
 ---

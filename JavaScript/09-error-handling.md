@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 9 — Error Handling"
+---
+
 # Chapter 9 — Error Handling
 
 > Depends on: Ch.6 (async error propagation relies on how Promises/async-await handle rejections).

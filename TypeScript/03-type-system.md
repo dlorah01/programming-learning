@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 3 — The Type System: Structural Typing, Assignability, Variance"
+---
+
 # Chapter 3 — The Type System: Structural Typing, Assignability, Variance
 
 This chapter is the load-bearing wall of everything else in this course. Generics, conditional types, function overloads, class design — all of it is downstream of "when does the checker consider type A assignable to type B." Take this chapter slowly.

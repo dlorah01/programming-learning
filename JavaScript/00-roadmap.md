@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Roadmap"
+---
+
 # JavaScript Mastery Curriculum — Roadmap & Index
 
 This is the master index for your full rebuild of JavaScript, from internals to senior-level system thinking. Each chapter ships as its own file so you can read, reference, and revisit independently. This file is the map — it shows how every chapter depends on and feeds into the others, so the language stops feeling like a pile of trivia and starts feeling like one coherent machine.

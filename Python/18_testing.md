@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 17: Testing"
+---
+
 # Python Mastery Course — Module 17: Testing
 
 ---

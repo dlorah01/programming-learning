@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 13 — Type Inference & Control Flow Internals"
+---
+
 # Chapter 13 — Type Inference & Control Flow Internals
 
 This chapter goes underneath everything from Chapters 2, 6, and 8 to explain the actual mechanism the checker uses to infer and narrow types — the "how," not just the "what."

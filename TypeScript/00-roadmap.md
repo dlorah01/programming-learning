@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Roadmap"
+---
+
 # TypeScript Mastery — Roadmap
 
 **Format:** Each chapter is a standalone `.md` file. This roadmap is the living index — I'll update the checklist as we go. Keep this file; it's your map back to everything.

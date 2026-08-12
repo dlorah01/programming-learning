@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 11 — Modules & Declarations"
+---
+
 # Chapter 11 — Modules & Declarations
 
 ## 11.1 ES Modules in TypeScript

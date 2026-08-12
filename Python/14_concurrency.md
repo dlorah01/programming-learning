@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 13: Concurrency — GIL, Threading, Multiprocessing, Asyncio"
+---
+
 # Python Mastery Course — Module 13: Concurrency — GIL, Threading, Multiprocessing, Asyncio
 
 ---

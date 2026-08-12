@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 8 — Advanced Types II: Conditional Types, `infer`, Recursion"
+---
+
 # Chapter 8 — Advanced Types II: Conditional Types, `infer`, Recursion
 
 ## 8.1 Conditional Types

@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 14: Module 15: Performance & Profiling"
+---
+
 # Python Mastery Course — Module 15: Performance & Profiling
 
 ---

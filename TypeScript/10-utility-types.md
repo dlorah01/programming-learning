@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 10 — Utility Types: The Complete Reference"
+---
+
 # Chapter 10 — Utility Types: The Complete Reference
 
 Every utility type here is just a named composition of Ch. 7–9's primitives (mapped types, conditional types, `infer`, `keyof`, indexed access). Several were already implemented from scratch in earlier chapters as teaching examples — this chapter is the consolidated, complete reference with the real `lib.es5.d.ts` definitions and the practical/interview angle for each. Treat this chapter as a lookup table you return to, not a linear read.

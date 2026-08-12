@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 3 — Functions"
+---
+
 # Chapter 3 — Functions
 
 > Depends on: Ch.2 §2.2 (scope chain), §2.3 (hoisting).

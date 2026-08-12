@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 14: Memory — Reference Counting, GC, Weak References"
+---
+
 # Python Mastery Course — Module 14: Memory — Reference Counting, GC, Weak References
 
 ---

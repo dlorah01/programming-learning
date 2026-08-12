@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 5 — Classes"
+---
+
 # Chapter 5 — Classes
 
 > Depends on: Ch.4 (prototype chain, `Object.create`) — classes are syntax sugar over exactly that machinery.

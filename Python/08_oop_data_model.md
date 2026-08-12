@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 7: OOP & the Python Data Model"
+---
+
 # Python Mastery Course — Module 7: OOP & the Python Data Model
 
 ---

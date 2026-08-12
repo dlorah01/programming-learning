@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 11: Functional Tools — `itertools` & `functools`"
+---
+
 # Python Mastery Course — Module 11: Functional Tools — `itertools` & `functools`
 
 ---

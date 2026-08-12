@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 12 — Modern JS & Interview Synthesis (Capstone)"
+---
+
 # Chapter 12 — Modern JS & Interview Synthesis (Capstone)
 
 > Depends on: everything (Chapters 1–11).

@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 8: Descriptors & Metaclasses"
+---
+
 # Python Mastery Course — Module 8: Descriptors & Metaclasses
 
 This module goes below `@property` and below `class` itself. It's advanced, genuinely optional for day-to-day application code, but it's exactly the material that separates "comfortable Python user" from "understands why the language behaves the way it does" — and it shows up in senior/staff-level interviews specifically to test that depth.

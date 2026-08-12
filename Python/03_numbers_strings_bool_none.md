@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 2: Numbers, Strings, Booleans, None, Truthiness"
+---
+
 # Python Mastery Course — Module 2: Numbers, Strings, Booleans, None, Truthiness
 
 ---

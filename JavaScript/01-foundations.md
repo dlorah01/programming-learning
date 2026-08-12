@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 1 — Foundations"
+---
+
 # Chapter 1 — Foundations
 
 > Depends on: nothing (this is bedrock).

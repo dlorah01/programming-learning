@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 7 — Memory"
+---
+
 # Chapter 7 — Memory
 
 > Depends on: Ch.2 §2.5 (primitives copy by value, objects by reference), Ch.3 §3.4 (closures keep variables alive).

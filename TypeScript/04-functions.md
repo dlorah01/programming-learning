@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 4 — Functions"
+---
+
 # Chapter 4 — Functions
 
 ## 4.1 Function Types

@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 6 — Generics"
+---
+
 # Chapter 6 — Generics
 
 ## 6.1 The Core Idea: Type Parameters

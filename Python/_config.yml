@@ -1,0 +1,9 @@
+title: Python Mastery Course
+description: A complete Python course for an experienced JS/TS engineer — internals, idioms, performance, concurrency, typing, testing, and interview prep.
+theme: jekyll-theme-cayman
+
+# GitHub Pages builds Markdown files with front matter into matching .html files
+# automatically — e.g. 00_foundations.md -> 00_foundations.html — so the links
+# in index.md will work as soon as this repo is published via GitHub Pages.
+
+markdown: kramdown

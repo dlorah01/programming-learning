@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 5 — Objects: Interfaces, Type Aliases, Unions & Intersections"
+---
+
 # Chapter 5 — Objects: Interfaces, Type Aliases, Unions & Intersections
 
 ## 5.1 Interfaces vs Type Aliases

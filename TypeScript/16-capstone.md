@@ -1,3 +1,7 @@
+---
+layout: default
+title: "Chapter 16 — Capstone: The Complete Mental Model & Mock Interview"
+---
 # Chapter 16 — Capstone: The Complete Mental Model & Mock Interview
 
 ## 16.1 The Complete Mental Model

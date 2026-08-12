@@ -1,0 +1,11 @@
+title: JavaScript Mastery Curriculum
+description: A complete rebuild of JavaScript from engine internals to senior-level system thinking.
+theme: minima
+markdown: kramdown
+
+plugins:
+  - jekyll-seo-tag
+
+header_pages:
+  - 00-roadmap.md
+  - 13-exercises-answer-key.md

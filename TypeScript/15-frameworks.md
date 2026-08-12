@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 15 — Framework Integration"
+---
+
 # Chapter 15 — Framework Integration
 
 Each of these frameworks stresses a different part of the type system covered so far — this chapter is about *applying* Chapters 1–14, not introducing new TS features.

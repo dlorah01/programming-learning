@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 4: Functions Deep Dive"
+---
+
 # Python Mastery Course — Module 4: Functions Deep Dive
 
 ---

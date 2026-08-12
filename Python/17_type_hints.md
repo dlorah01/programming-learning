@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 16: Type Hints & Static Analysis"
+---
+
 # Python Mastery Course — Module 16: Type Hints & Static Analysis
 
 ---

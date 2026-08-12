@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 2 — Types: Primitives to Narrowing"
+---
+
 # Chapter 2 — Types: Primitives to Narrowing
 
 ## 2.1 Primitive Types

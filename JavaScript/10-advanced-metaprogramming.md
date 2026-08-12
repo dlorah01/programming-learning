@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 10 — Advanced Topics & Metaprogramming"
+---
+
 # Chapter 10 — Advanced Topics & Metaprogramming
 
 > Depends on: Ch.4 §4.6–4.7 (Reflect/Proxy), Ch.6 §6.5 (generators).

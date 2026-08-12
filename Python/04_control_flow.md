@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 3: Control Flow, Comprehensions, `match`/`case`, Iteration"
+---
+
 # Python Mastery Course — Module 3: Control Flow, Comprehensions, `match`/`case`, Iteration
 
 ---

@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 18: Production Engineering"
+---
+
 # Python Mastery Course — Module 18: Production Engineering
 
 ---

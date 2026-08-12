@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 6: Generators & Iterators"
+---
+
 # Python Mastery Course — Module 6: Generators & Iterators
 
 ---

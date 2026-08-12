@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Roadmap"
+---
+
 # Python Mastery Course — Roadmap
 
 This file is the map of the whole course: what each module covers, why it sits where it does in the sequence, and how the modules build on each other. Use it to navigate, to decide where to jump in if you want to skip around, and as a checklist of what "complete" looks like.

@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 5: Closures & Decorators"
+---
+
 # Python Mastery Course — Module 5: Closures & Decorators
 
 ---

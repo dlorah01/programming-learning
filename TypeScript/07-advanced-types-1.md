@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 7 — Advanced Types I: `keyof`, `typeof`, Indexed Access, Mapped Types"
+---
+
 # Chapter 7 — Advanced Types I: `keyof`, `typeof`, Indexed Access, Mapped Types
 
 This chapter is about **type-level introspection and transformation** — operators that let you *derive* new types from existing ones instead of writing everything by hand. This is the toolkit that makes utility types (Ch. 10) possible.

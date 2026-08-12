@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 14 — Architecture & Best Practices"
+---
+
 # Chapter 14 — Architecture & Best Practices
 
 ## 14.1 The `satisfies` Operator

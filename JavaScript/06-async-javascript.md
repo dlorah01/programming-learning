@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 6 — Asynchronous JavaScript"
+---
+
 # Chapter 6 — Asynchronous JavaScript
 
 > Depends on: Ch.1 §1.7 (single-threaded, run-to-completion execution model), Ch.3 (closures — callbacks are just functions with captured scope).

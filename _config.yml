@@ -1,0 +1,31 @@
+# Site settings — GitHub Pages config for this repo's landing page.
+# This is a single Jekyll site: index.md is the hub, and it links out to
+# the JavaScript/, Python/, and TypeScript/ curricula, each a folder of
+# plain Markdown chapters (no per-language site or nested config).
+title: "Programming Learning"
+description: >-
+  A personal, systems-based programming mastery library. Three
+  curricula — JavaScript, Python, TypeScript — each hand-built chapter
+  by chapter, from language internals to production and interview-level
+  synthesis.
+lang: en
+
+theme: jekyll-theme-cayman
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  hard_wrap: false
+
+plugins:
+  - jekyll-relative-links
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+show_downloads: false
+
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock

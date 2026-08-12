@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 10: Error Handling & Context Managers"
+---
+
 # Python Mastery Course — Module 10: Error Handling & Context Managers
 
 ---

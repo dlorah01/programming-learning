@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 1: Names, Objects, References, Identity vs Equality, Mutability"
+---
+
 # Python Mastery Course — Module 1: Names, Objects, References, Identity vs Equality, Mutability
 
 This module resolves the single biggest category of "Python did something weird" surprises for JS/TS developers. Almost all of them trace back to one fact: **Python variables are not boxes that hold values — they're labels attached to objects that live independently on the heap.**

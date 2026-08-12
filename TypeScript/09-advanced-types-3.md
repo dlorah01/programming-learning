@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 9 — Advanced Types III: Template Literal Types & Nominal Patterns"
+---
+
 # Chapter 9 — Advanced Types III: Template Literal Types & Nominal Patterns
 
 Branded types were introduced in Ch. 3.2 as the fix for TS's lack of native nominal typing. This chapter goes further with them once combined with the rest of the toolkit, and covers template literal types in full — the feature that turns TS's type system into something close to a string-pattern-matching engine.

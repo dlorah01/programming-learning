@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 4 — Objects & Prototypes"
+---
+
 # Chapter 4 — Objects & Prototypes
 
 > Depends on: Ch.2 §2.5 (objects vs primitives), Ch.3 (functions as first-class values, `this`).

@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Module 9: Collections"
+---
+
 # Python Mastery Course — Module 9: Collections
 
 ---

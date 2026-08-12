@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Chapter 11 — Performance"
+---
+
 # Chapter 11 — Performance
 
 > Depends on: Ch.1 §1.3 (engine internals — monomorphism), Ch.3 §3.4 (closures power debounce/throttle/memoize), Ch.6 (event loop timing), Ch.7 (GC-aware caching), Ch.8 (code splitting via dynamic import).
