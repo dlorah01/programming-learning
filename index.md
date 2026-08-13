@@ -9,14 +9,30 @@ A personal, systems-based programming mastery library. Every curriculum here is 
 
 Pick a track below to jump into its roadmap and chapters.
 
-## [JavaScript](JavaScript)
-12 chapters, foundations through modern JS & interview synthesis, plus a full exercise answer key and an interactive mechanism-drill page. **Complete.**
+<div class="lang-grid">
 
-## [Python](Python)
-20 modules, foundations through a cumulative interview sprint, covering the language, CPython internals, concurrency, memory, testing, and production engineering. **Complete.**
+<a class="lang-card" href="JavaScript">
+  <span class="lang-badge js">JS</span>
+  <p class="lang-name">JavaScript</p>
+  <p class="lang-meta">12 chapters · answer key · mechanism drill</p>
+  <span class="lang-status complete">Complete</span>
+</a>
 
-## [TypeScript](TypeScript)
-16 chapters, foundations through a capstone mock interview, plus a full Master Exercise Reference appendix. **Complete.**
+<a class="lang-card" href="Python">
+  <span class="lang-badge py">PY</span>
+  <p class="lang-name">Python</p>
+  <p class="lang-meta">20 modules · foundations to interview sprint</p>
+  <span class="lang-status complete">Complete</span>
+</a>
+
+<a class="lang-card" href="TypeScript">
+  <span class="lang-badge ts">TS</span>
+  <p class="lang-name">TypeScript</p>
+  <p class="lang-meta">16 chapters · exercise reference appendix</p>
+  <span class="lang-status complete">Complete</span>
+</a>
+
+</div>
 
 ---
 

@@ -1,0 +1,89 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+/* Landing-page track grid — see index.md */
+.lang-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin: 2rem 0;
+}
+
+.lang-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  padding: 1.5rem 1.25rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.lang-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  border-color: #159957;
+}
+
+.lang-card.is-planned {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.lang-card.is-planned:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #e1e4e8;
+}
+
+.lang-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.lang-badge.js { background: #f7df1e; color: #222; }
+.lang-badge.py { background: #3776ab; color: #fff; }
+.lang-badge.ts { background: #3178c6; color: #fff; }
+
+.lang-name {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  color: #159957;
+}
+
+.lang-meta {
+  font-size: 0.875rem;
+  color: #586069;
+  margin: 0 0 0.75rem;
+}
+
+.lang-status {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
+
+.lang-status.complete {
+  background: #e6f7ef;
+  color: #159957;
+}
+
+.lang-status.planned {
+  background: #f1f3f5;
+  color: #6a737d;
+}
