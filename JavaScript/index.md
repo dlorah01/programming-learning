@@ -1,8 +1,7 @@
 ---
 layout: default
 title: "JavaScript Mastery Curriculum"
-nav_order: 0
-permalink: /
+description: A complete rebuild of JavaScript from engine internals to senior-level system thinking — 12 chapters, an answer key, and an interactive drill.
 ---
 
 # JavaScript Mastery Curriculum
