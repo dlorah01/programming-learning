@@ -1,7 +1,9 @@
-# Site settings — GitHub Pages config for this repo's landing page.
-# This is a single Jekyll site: index.md is the hub, and it links out to
-# the JavaScript/, Python/, and TypeScript/ curricula, each a folder of
-# plain Markdown chapters (no per-language site or nested config).
+# Site settings — this is the project-wide hub/landing page.
+# Each track (JavaScript/, Python/, TypeScript/) is its own independent
+# Jekyll site with its own _config.yml and index.md, meant to be served
+# from inside that folder for the fullest themed experience. This root
+# config only builds the landing page at index.md, which links out to
+# all three.
 title: "Programming Learning"
 description: >-
   A personal, systems-based programming mastery library. Three
