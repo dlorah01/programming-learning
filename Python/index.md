@@ -37,12 +37,12 @@ Start with the **[Roadmap](00_roadmap.html)** for how the modules connect to eac
 | 19 | [Production Engineering](19_production_engineering.html) | Logging, project structure, `Ruff`/`Black`, CI/CD |
 | 20 | [Interview Sprint](20_interview_sprint.html) | Full Q&A reference — junior → FAANG, answers included |
 | 21 | [Roadmap](00_roadmap.html) | How every module connects — start here if you're new |
-| 22 | [Answer Key (Modules 0–18)](21_answer_key_00_18.html) | Full worked answers for every exercise in Modules 0–18 |
+| 22 | [Answer Key (Modules 0–18)](21_answer_key_00_18.html) | Index — worked answers now live in each module's own "Exercise Solutions" section |
 
 ---
 
 ## Suggested Path
 
 1. Read the **[Roadmap](00_roadmap.html)** first — it explains why the modules are sequenced the way they are.
-2. Work Modules 1 → 19 in order, attempting each module's exercises before checking the **[Answer Key](21_answer_key_00_18.html)**.
+2. Work Modules 1 → 19 in order, attempting each module's exercises cold before reading its **Exercise Solutions** section further down the same page.
 3. Use **[Module 20](20_interview_sprint.html)** for spaced-repetition review — revisit it repeatedly, not once.

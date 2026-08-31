@@ -192,6 +192,8 @@ A genuine, common bug: decorator order matters (e.g., a caching decorator above 
 
 ## 5.6 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:**
 ```python
 def make_multipliers():
@@ -212,6 +214,84 @@ print([f(10) for f in fns])
 **Interview — senior:** "Write a decorator factory `@cache_for(seconds)` that caches a function's return value for a configurable duration, correctly handling different arguments as different cache keys. Discuss what happens with unhashable arguments and how you'd handle that."
 
 **Advanced / FAANG-style:** "You have three decorators — `@log`, `@cache`, `@require_auth` — stacked on an API handler. Reason through the correct stacking order for production correctness (e.g., should auth checking happen before or after a cache lookup?), and explain what silently breaks if the order is wrong." (This is a real production-architecture question disguised as a decorator-ordering puzzle.)
+
+---
+
+## 5.7 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+def make_multipliers():
+    return [lambda x: x * i for i in range(3)]
+
+fns = make_multipliers()
+print([f(10) for f in fns])
+```
+**A:** `[20, 20, 20]`. All three lambdas close over the same variable `i` by reference, not by its value at creation time — since loops don't create a new scope per iteration, there is only ever one `i`, and it holds `2` (its final value) by the time any lambda is actually called. Every call computes `10 * 2`.
+
+**Q — Core:** Write a `@timer` decorator (using `functools.wraps`) that prints how long the wrapped function took, and apply it to a function that also takes `*args, **kwargs`.
+**A:**
+```python
+import functools, time
+
+def timer(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        print(f"{func.__name__} took {time.perf_counter() - start:.4f}s")
+        return result
+    return wrapper
+
+@timer
+def compute(a, b, factor=1):
+    return (a + b) * factor
+```
+
+**Q — Debugging:** A decorated function's `help(my_func)` output shows the wrapper's generic signature instead of the original function's docstring and parameters. Diagnose and fix in one line.
+**A:** The decorator's inner `wrapper` is missing `@functools.wraps(func)`. Add it directly above `def wrapper(*args, **kwargs):` inside the decorator — this copies `__name__`, `__doc__`, and other metadata from the original function onto the wrapper.
+
+**Q — Interview (junior):** "What does `@decorator` above a function definition actually do, in terms of plain assignment? Rewrite it without the `@` syntax."
+**A:**
+```python
+@logged
+def add(a, b): return a + b
+```
+is exactly equivalent to:
+```python
+def add(a, b): return a + b
+add = logged(add)
+```
+`@decorator` is pure sugar for calling `decorator` on the function immediately after it's defined and rebinding the original name to the result.
+
+**Q — Interview (mid):** "Explain the classic `for i in range(n): funcs.append(lambda: i)` bug. Why does it happen, and what are two different ways to fix it?"
+**A:** All appended lambdas close over the same shared loop variable `i` (loops don't scope per iteration in Python), so every one of them sees whatever `i`'s final value ended up being once the loop finished, regardless of what it was during the iteration that created that particular lambda. Fix 1 — default-argument capture: `lambda i=i: i`, since default values are evaluated once, immediately, at the point the `lambda` statement itself executes, baking in the current value of `i` at that moment. Fix 2 — a factory function returning a fresh closure per call: `def make(i): return lambda: i`, where each invocation of `make` creates its own independent local `i`, with no sharing across calls.
+
+**Q — Interview (senior):** "Write a decorator factory `@cache_for(seconds)` that caches a function's return value for a configurable duration, correctly handling different arguments as different cache keys. Discuss what happens with unhashable arguments."
+**A:**
+```python
+import time, functools
+
+def cache_for(seconds):
+    def decorator(func):
+        cache = {}
+        @functools.wraps(func)
+        def wrapper(*args):
+            now = time.time()
+            if args in cache and now - cache[args][1] < seconds:
+                return cache[args][0]
+            result = func(*args)
+            cache[args] = (result, now)
+            return result
+        return wrapper
+    return decorator
+```
+`args` (a tuple) is used directly as the cache dict's key, which correctly gives different argument combinations different cache entries — but this requires every element of `args` to be hashable. A `list` argument would raise `TypeError: unhashable type: 'list'` the moment `args in cache` is evaluated. Handling this properly requires either documenting that arguments must be hashable, or converting unhashable arguments to a hashable representation (e.g. `tuple(sorted(some_dict.items()))`) before using them as a key — with the tradeoff that this adds real complexity and a place for subtle bugs if two logically-different unhashable inputs happen to serialize to the same key.
+
+**Q — Advanced:** "You have three decorators — `@log`, `@cache`, `@require_auth` — stacked on an API handler. Reason through the correct stacking order for production correctness, and explain what silently breaks if the order is wrong."
+**A:** Stacked decorators apply bottom-up (`@a @b def f()` means `f = a(b(f))`, so `b` wraps first). For this trio, `@require_auth` should sit outermost (applied last, so it runs first on each call) — an unauthorized request should never even reach the cache lookup or generate a log entry for data the caller shouldn't have touched. Below that, ordering `@cache` above `@log` (i.e., `log` wraps closer to the real function, `cache` wraps around `log`) means every call — cache hit or miss — gets logged consistently; ordering it the other way (`@log` outermost, `@cache` closer in) would only log actual cache misses, silently under-reporting real traffic if that's not the intent. The concrete "correct" placement between `cache`/`log` genuinely depends on what you want logged — but auth belonging outermost, gating everything else, is the one piece that's a correctness requirement rather than a preference, and getting it wrong (e.g. `@cache` outermost, above `@require_auth`) risks serving a cached response to an unauthorized caller if the cache key doesn't account for identity.
 
 ---
 

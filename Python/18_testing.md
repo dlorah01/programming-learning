@@ -162,6 +162,8 @@ Genuinely eliminates copy-paste test duplication (direct analog to Jest's `test.
 
 ## 17.7 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict:** Given a `Mock()` with no `spec`, calling `mock.nonexistent_method()` — does this raise an error? What about `create_autospec(RealClass)` with the same call, assuming `RealClass` has no such method?
 
 **Core:** Write a `pytest` fixture providing a fresh, empty `ShoppingCart` per test, and three parametrized tests covering adding items, removing items, and computing totals.
@@ -175,6 +177,56 @@ Genuinely eliminates copy-paste test duplication (direct analog to Jest's `test.
 **Interview — senior:** "Design the test strategy for a service that calls an external payment API and writes to a database. What do you mock, what do you test with a real (test) database, and why — justify the boundary."
 
 **Advanced / FAANG-style:** "A team's test suite is fast and green but the service still ships regressions regularly. Diagnose likely root causes in their testing discipline (connecting to over-mocking, brittle assertions, or missing integration-level coverage) and propose concrete changes to their test pyramid."
+
+---
+
+## 17.8 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict:** Given a `Mock()` with no spec, does `mock.nonexistent_method()` raise? What about `create_autospec(RealClass)` calling a method `RealClass` doesn't actually have?
+**A:** A bare `Mock()` does **not** raise — any attribute or method access on it succeeds automatically, silently creating and returning yet another `Mock` object on demand, since it accepts any interaction by design. `create_autospec(RealClass)` calling a method that doesn't genuinely exist on `RealClass` **does raise `AttributeError`**, because the autospec explicitly constrains the mock's allowed interface to match the real class's actual, real attributes and methods.
+
+**Q — Core:** Write a `pytest` fixture providing a fresh `ShoppingCart` per test, and three parametrized tests covering adding, removing, and totals.
+**A:**
+```python
+import pytest
+
+@pytest.fixture
+def cart():
+    return ShoppingCart()
+
+@pytest.mark.parametrize("item, price, expected_total", [
+    ("apple", 1.0, 1.0),
+    ("banana", 0.5, 0.5),
+])
+def test_add_item(cart, item, price, expected_total):
+    cart.add(item, price)
+    assert cart.total() == expected_total
+
+def test_remove_item(cart):
+    cart.add("apple", 1.0)
+    cart.remove("apple")
+    assert cart.total() == 0
+
+def test_empty_cart_total(cart):
+    assert cart.total() == 0
+```
+
+**Q — Debugging:** A test suite mocks `PaymentGateway`, and after a refactor genuinely breaks the real payment integration, every relevant test still passes. Diagnose, and describe what would have caught the real bug.
+**A:** The tests mocked `PaymentGateway` broadly (most likely a bare `Mock()`, not spec-constrained), so they never actually exercised or verified the real interaction contract between the code under test and `PaymentGateway`'s genuine interface — the mock happily accepted whatever method calls were made against it, matching or not, since a bare `Mock` never validates call shape against the real object. A refactor that changed how `PaymentGateway` genuinely needed to be called (a renamed method, a changed parameter) wouldn't be caught, because nothing in the test suite ever checked the mock's calls against the real class's actual signature. Fix: use `create_autospec(PaymentGateway)` (or `patch(..., autospec=True)`) so the mock's allowed interface is verified against the real class, and add at least a small number of genuine integration tests against a real (sandboxed/test-environment) payment gateway to catch this class of contract drift that pure mocking structurally can't.
+
+**Q — Interview (junior):** "What's the difference between `unittest` and `pytest`? Name at least two concrete advantages of `pytest`."
+**A:** `unittest` requires class-based `TestCase` subclasses and a set of `assertX` methods (`assertEqual`, `assertTrue`, etc.). `pytest` allows plain functions with plain `assert` statements, which it rewrites at import time to produce rich, detailed failure output automatically. Two concrete advantages: (1) fixtures — a more composable, explicit dependency-injection-style setup/teardown system than `setUp`/`tearDown`; (2) `pytest` can discover and run existing `unittest`-based test suites unmodified, so adopting it doesn't require rewriting existing tests.
+
+**Q — Interview (mid):** "Explain `pytest` fixtures and fixture scopes. When would you use `scope='session'` vs. the default `scope='function'`, and what risk does the broader scope introduce?"
+**A:** Fixtures are reusable setup/teardown functions that `pytest` injects into a test by matching the test function's parameter names to registered fixture names; a `yield` inside a fixture splits it into setup (before `yield`) and teardown (after, typically wrapped in `finally`). `scope="function"` (the default) creates a fresh instance per test — appropriate whenever tests need full isolation from one another. `scope="session"` creates the fixture exactly once for the entire test run — appropriate for something genuinely expensive to set up (a real database connection, a heavyweight external service client) where sharing across many tests is an acceptable, desired tradeoff. Risk of the broader scope: shared mutable state can leak between tests that share the fixture, producing order-dependent test failures (tests that pass or fail depending on what ran before them) that are notoriously hard to diagnose.
+
+**Q — Interview (senior):** Design a test strategy for a service calling an external payment API and writing to a database — what's mocked, what's tested for real, and why.
+**A:** Mock the external payment API entirely — it's a genuine external boundary; real calls in tests would be slow, flaky, potentially cost real money, and dependent on third-party availability, none of which belong in a fast, reliable test suite. Test against a real (dedicated test-environment) database rather than mocking it — database interaction (queries, transactions, schema behavior) is exactly the kind of internal-but-I/O-adjacent logic where mocking risks hiding real bugs (a mocked query might not reflect actual constraint violations, transaction rollback behavior, or query correctness), and a test database is cheap, fast, and fully within the team's control, so the cost-benefit clearly favors testing it for real.
+
+**Q — Advanced:** A team's test suite is fast and green, but the service still ships regressions regularly. Diagnose likely root causes and propose changes.
+**A:** Likely causes: over-mocking internal collaborators (tests verify that code called a mock correctly, not that real end-to-end behavior is correct — passing tests don't guarantee correct behavior), brittle assertions checking implementation details rather than observable outcomes (masking whether the actual output/behavior is right), and/or a missing integration-testing layer entirely — a suite that's 100% unit tests with heavy internal mocking can stay green while real, broken behavior slips through every seam between components that were individually tested in isolation but never verified together. Proposed changes: add a thin but genuine layer of integration tests covering the actual seams between major components; audit existing mocks specifically for whether each one is mocking a true external boundary (appropriate) or an internal collaborator that should instead be tested for real (a smell); shift some assertions from implementation-detail checks toward observable-behavior checks.
 
 ---
 

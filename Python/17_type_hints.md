@@ -160,6 +160,8 @@ Directly equivalent to TS's `type Mode = "read" | "write" | "append"` — genuin
 
 ## 16.10 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict:** Given `def f(x: int) -> int: return x`, called as `f("hello")` — what happens when this code actually runs, with no type checker involved? What happens when you run `mypy` on it?
 
 **Core:** Define a `Protocol` called `Drawable` requiring a `draw() -> str` method, write two unrelated classes (no shared base class) that both structurally satisfy it, and a function accepting `Drawable` that works with both.
@@ -173,6 +175,68 @@ Directly equivalent to TS's `type Mode = "read" | "write" | "append"` — genuin
 **Interview — senior:** "Your team, coming from a strict TypeScript codebase, is adopting Python for a new service and wants the same level of type safety guarantee. What would you tell them is realistically achievable with `mypy`/`pyright`, and what gaps remain no matter how strict the configuration is?"
 
 **Advanced / FAANG-style:** "Design the type hints for a small plugin-registry system where plugins must implement a `run(config: dict) -> Result` shape, without requiring plugins to inherit from a common base class. Justify using `Protocol` over `Generic`/ABC-based inheritance for this specific requirement."
+
+---
+
+## 16.11 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+def f(x: int) -> int:
+    return x
+f("hello")
+```
+**A:** At runtime, this executes completely fine and returns `"hello"` unchanged — Python ignores type hints entirely during execution; there is no built-in check enforcing that `x` is actually an `int`. Running `mypy` (or `pyright`) on this file, by contrast, flags the call: something like `error: Argument 1 to "f" has incompatible type "str"; expected "int"` — the checker catches it statically, but nothing about running the program itself does.
+
+**Q — Core:** Define a `Protocol` called `Drawable` requiring `draw() -> str`, and write two unrelated classes that both structurally satisfy it.
+**A:**
+```python
+from typing import Protocol
+
+class Drawable(Protocol):
+    def draw(self) -> str: ...
+
+class Circle:
+    def draw(self) -> str:
+        return "○"
+
+class Square:
+    def draw(self) -> str:
+        return "□"
+
+def render(shape: Drawable) -> None:
+    print(shape.draw())
+
+render(Circle())
+render(Square())
+```
+Neither `Circle` nor `Square` inherits from `Drawable` or from each other — both satisfy the protocol purely by having a matching `draw() -> str` method, which is exactly the structural-typing point.
+
+**Q — Debugging:** A codebase has `mypy --strict` configured, but a specific module full of `# type: ignore` comments still ships a runtime `AttributeError` a correct type hint would have caught. What went wrong, and what would you change?
+**A:** Likely, `# type: ignore` was used to silence a real, unresolved type error under time pressure (or because a dependency lacked type stubs and the whole call chain effectively degraded to `Any`), which disabled checking for exactly the code path that later broke. Change: require a specific, reviewed justification for every `# type: ignore` (many linters can enforce requiring a specific error code alongside it, rather than a blanket suppression), and audit/add proper type stubs for untyped third-party dependencies rather than letting `Any` silently propagate through them unchecked.
+
+**Q — Interview (junior):** "Do Python type hints get checked at runtime? What actually enforces them, if anything?"
+**A:** No — never, by default. CPython simply ignores type hints during execution; nothing about `def f(x: int):` restricts what's actually passed at runtime. Enforcement, such as it is, comes entirely from separate, opt-in static analysis tools (`mypy`, `pyright`) run outside normal program execution — and even then, only for whatever code those tools actually check.
+
+**Q — Interview (mid):** "Explain the difference between `Generic`/class-based typing and `Protocol`-based structural typing, and connect `Protocol` to Python's existing duck-typing philosophy."
+**A:** `Generic`/class-based typing is **nominal** — a type is only considered to satisfy an interface through an explicit, declared inheritance relationship. `Protocol` is **structural** — any object whose methods/attributes match the required shape satisfies it, with zero required inheritance at all. This maps directly onto how Python's runtime has always behaved: `for x in obj` works on anything implementing `__iter__`, `len(obj)` works on anything implementing `__len__`, regardless of what that object actually inherits from (duck typing). `Protocol` lets the *static type checker* verify this same "if it has the right shape, it qualifies" philosophy ahead of time, rather than only discovering a shape mismatch at runtime.
+
+**Q — Interview (senior):** A team from a strict TypeScript codebase wants equivalent type safety in Python. What's realistically achievable, and what gaps remain regardless of strictness?
+**A:** Realistically achievable: strong static-analysis-time confidence within code the team fully controls, real-time IDE error catching, and a meaningfully reduced rate of type-related bugs shipped in that internally-typed code. Gaps that remain no matter how strict the configuration: zero runtime enforcement whatsoever — a value of the wrong type can still flow through in production if a checker was skipped in CI, a code path was suppressed with `# type: ignore`, or an untyped third-party dependency defaults to `Any` and silently disables checking through that entire boundary. This is a structurally weaker guarantee than TypeScript's compile-gate (where `tsc` genuinely blocks a build), and it should be stated to the team plainly rather than implied to be equivalent.
+
+**Q — Advanced:** Design type hints for a plugin registry where plugins must implement `run(config: dict) -> Result`, without requiring inheritance from a common base class — justify `Protocol` over `Generic`/ABC-based inheritance.
+**A:**
+```python
+from typing import Protocol
+
+class Plugin(Protocol):
+    def run(self, config: dict) -> Result: ...
+
+def register(plugin: Plugin) -> None: ...
+```
+`Protocol` is the right choice specifically because plugins may be authored independently, possibly by separate teams or external packages, and shouldn't need to import and inherit from a shared base class just to be usable by the registry — a `Generic`/ABC-based approach would force that inheritance coupling on every plugin author. `Protocol` gets the same static guarantee (the registry can verify any given plugin object has a compatible `run` method before accepting it) with zero required inheritance relationship, which matches how genuinely decoupled plugin authorship actually works in practice.
 
 ---
 

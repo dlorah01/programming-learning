@@ -120,6 +120,8 @@ Already covered in depth (Module 11.3's `lru_cache`) — worth restating here sp
 
 ## 15.8 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict:** Given a function with a nested loop checking `if x in results_list`, state its precise time complexity and identify the one-line fix that changes it, referencing the specific Big-O numbers from Module 9's table.
 
 **Core:** Take a pure-Python function computing pairwise distances between two lists of 2D points (nested loop, O(n·m)) and rewrite it using NumPy broadcasting, then use `timeit` to measure the actual speedup at a realistic data size.
@@ -133,6 +135,40 @@ Already covered in depth (Module 11.3's `lru_cache`) — worth restating here sp
 **Interview — senior:** "Given a CPU-bound Python service that's too slow in production, walk through your full diagnostic and optimization process, from initial profiling through to a specific class of fix (algorithmic, vectorization, caching, or parallelism), and how you'd decide between those options given profiling data."
 
 **Advanced / FAANG-style:** "Explain, connecting back to Module 0 and Module 14, precisely why a hand-written pure-Python loop summing a NumPy array's elements one at a time is dramatically slower than `np.sum()` on the same array — walk through both the bytecode-dispatch overhead and the boxed-vs-unboxed memory layout difference."
+
+---
+
+## 15.9 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict/reason:** Given a nested loop checking `if x in results_list:`, state its precise time complexity and identify the one-line fix.
+**A:** `x in results_list` on a plain `list` is O(n) per check; done inside a loop running n times, the total is **O(n²)**. One-line fix: `results_set = set(results_list)` before the loop, then check `x in results_set` — reduces the membership check to O(1) average, bringing the whole loop back down to O(n).
+
+**Q — Core:** Rewrite a pairwise-distance nested loop using NumPy broadcasting and measure the speedup with `timeit`.
+**A:**
+```python
+import numpy as np
+def pairwise_distances(a, b):
+    diff = a[:, None, :] - b[None, :, :]
+    return np.linalg.norm(diff, axis=-1)
+```
+This replaces an O(n·m) pure-Python nested loop with a single vectorized operation running inside NumPy's compiled C code — expect a large, measurable speedup as `n`/`m` grow, benchmarked properly with `timeit.timeit(...)` at a realistic array size rather than a single manual `time.time()` sample.
+
+**Q — Debugging:** A teammate profiles with `cProfile` and concludes a small helper function is the bottleneck because it has the highest "total calls" count — but its "cumulative time" is tiny. What should they have looked at instead?
+**A:** "Total calls" only counts how many times a function was invoked — a small, fast helper called a million times can have a very high call count while contributing negligibly to total runtime. "Cumulative time" (`cumtime`) — time spent inside that function *and everything it calls* — is the far more useful signal for locating the actual bottleneck, since a function with high cumulative time (even called only once) is genuinely where the real time is being spent. The teammate should have sorted by `cumtime`, not call count.
+
+**Q — Interview (junior):** "Why shouldn't you use `time.time()` before/after a single run to benchmark a fast function? What would you use instead?"
+**A:** A single `time.time()` delta captures exactly one noisy sample — susceptible to OS scheduling jitter, whether the CPU cache happened to be warm, and whether a GC pause happened to land during that specific run — any of which can make one measurement misleading, especially for a fast function where the actual work time is small relative to this noise. `timeit` runs many iterations and reports statistically reliable aggregate timing, purpose-built for micro-benchmarking.
+
+**Q — Interview (mid):** A function checking `x in another_list` inside a loop over large data is slow at scale. Diagnose and fix, stating the before/after Big-O.
+**A:** Diagnosis: the membership check is O(n) on a `list`, performed inside a loop of size n, making the total O(n²). Fix: convert `another_list` to a `set` once before the loop; membership checks become O(1) average. Before: O(n²). After: O(n).
+
+**Q — Interview (senior):** Walk through the full diagnostic and optimization process for a slow CPU-bound Python service in production.
+**A:** Profile first, always — with `cProfile` (or a sampling profiler for lower overhead in production), to find the actual hot function(s) rather than guessing. Once located, check for an algorithmic/Big-O issue first (an accidental O(n²) pattern per Module 9/15.4) — this is usually the highest-leverage fix, and free of any new dependency or architectural change. If the hot code is genuinely numeric/array-shaped, vectorize with NumPy. If it's expensive-but-repeatable pure computation over a small, recurring input space, consider `functools.lru_cache`. If none of those apply and the work is embarrassingly parallel CPU-bound computation, consider `multiprocessing`. After each individual change, re-profile to confirm the fix actually helped before moving to the next candidate — never stack multiple untested changes at once.
+
+**Q — Advanced:** "Explain, connecting back to Modules 0 and 14, why a hand-written pure-Python loop summing a NumPy array's elements one at a time is dramatically slower than `np.sum()` on the same array."
+**A:** Two compounding costs. Bytecode-dispatch overhead (Module 0.2): the hand-written loop executes real Python bytecode instructions per element (`LOAD_FAST`, `BINARY_OP`, etc.), each going through CPython's interpreter evaluation loop — genuine, unavoidable per-element dispatch cost, with no default JIT to eliminate it. Boxed-vs-unboxed memory layout (Module 14.1/14.4): each element pulled out of the NumPy array this way still has to be converted into a full, individually-boxed Python `int`/`float` object (with its own type pointer and refcount) purely to do Python-level arithmetic on it — real allocation/refcounting overhead per element that `np.sum()`, operating entirely inside compiled C code directly on the array's raw, contiguous, unboxed C buffer, never incurs at all.
 
 ---
 

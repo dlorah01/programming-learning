@@ -127,6 +127,8 @@ print(Plugin.registry)   # [<class '__main__.MyPlugin'>]
 
 ## 8.5 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:**
 ```python
 class Meta(type):
@@ -153,6 +155,65 @@ f = Foo()
 **Interview — senior:** "You need every subclass of a base `Handler` class to automatically register itself in a dispatch table at class-definition time. Compare implementing this via a metaclass vs. `__init_subclass__`, and justify which you'd actually ship in a production codebase and why."
 
 **Advanced / FAANG-style:** "A junior engineer is confused why `instance.some_method` works even though they never explicitly bound `self`. Explain, using the descriptor protocol precisely, how plain functions stored as class attributes become bound methods on instance access — and why this means functions are technically non-data descriptors themselves."
+
+---
+
+## 8.6 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+class Meta(type):
+    def __new__(mcs, name, bases, ns):
+        print(f"creating class {name}")
+        return super().__new__(mcs, name, bases, ns)
+
+class Foo(metaclass=Meta):
+    pass
+
+print("---")
+f = Foo()
+```
+**A:** `creating class Foo` prints first — the moment the `class Foo(metaclass=Meta): pass` statement executes, at class-*definition* time, which happens as soon as the module is loaded, well before any instance is created. `---` prints next. `f = Foo()` then runs — this triggers `Foo`'s own (ordinary, `object`-level) `__new__`/`__init__` for *instantiation*, not `Meta.__new__` again (that already ran exactly once, when the class itself was created) — so no further "creating class" output appears.
+
+**Q — Core:** Implement a `PositiveNumber` descriptor and attach it to two unrelated classes, demonstrating reuse a one-off `@property` per class wouldn't give you.
+**A:**
+```python
+class PositiveNumber:
+    def __set_name__(self, owner, name):
+        self.name = "_" + name
+    def __get__(self, instance, owner):
+        if instance is None:        # accessed on the class, not an instance
+            return self
+        return getattr(instance, self.name)
+    def __set__(self, instance, value):
+        if value <= 0:
+            raise ValueError(f"{self.name} must be positive")
+        setattr(instance, self.name, value)
+
+class Product:
+    price = PositiveNumber()
+
+class Order:
+    quantity = PositiveNumber()
+```
+The same `PositiveNumber` class enforces identical validation logic on two entirely unrelated classes with zero shared inheritance and zero duplicated getter/setter code — a one-off `@property` written separately in each class would duplicate that validation logic in both places.
+
+**Q — Debugging:** A class defines `__getattr__` for lazy-loaded config values, and a genuine typo accesses `self.confg` instead of `self.config` elsewhere in the codebase — instead of a clear `AttributeError`, the bug manifests as a mysterious remote-lookup attempt for a nonexistent key. Explain why, and how a correct `__getattr__` would surface the typo immediately.
+**A:** `self.confg` isn't found by normal attribute lookup (there's no such attribute), so Python falls back to calling `__getattr__("confg")` — if that implementation treats *any* unrecognized name as "go fetch this remotely" without first checking whether the name is actually a known/expected key, it silently attempts a remote lookup for `"confg"` as if it were a legitimate config key, rather than signaling that this attribute doesn't exist. A correct implementation would explicitly validate `name` against the set of genuinely expected keys and raise `AttributeError(name)` for anything else — which would have produced an ordinary, immediately recognizable `AttributeError: confg` instead of a confusing downstream remote-lookup failure.
+
+**Q — Interview (junior):** "What is `type` in Python, really? What does `type(SomeClass)` return, and why?"
+**A:** `type` is Python's default metaclass — the thing every ordinary class is itself an instance of. `type(SomeClass)` returns `<class 'type'>` (assuming `SomeClass` doesn't use a custom metaclass), because `SomeClass` is, itself, an object — one created by calling `type` (or a subclass of it) under the hood, the same way `type(5)` returns `<class 'int'>` because `5` is an instance of `int`.
+
+**Q — Interview (mid):** "Explain what `@property` actually is, mechanically, in terms of the descriptor protocol."
+**A:** `@property` is a built-in class implementing the descriptor protocol — it defines `__get__` (and `__set__`, if a setter is attached via `@x.setter`) — and an instance of it is stored as a *class* attribute. When you access `instance.attr`, Python's attribute-lookup machinery checks whether the class attribute found is a descriptor, and if so, calls its `__get__` (or `__set__`, for assignment) instead of just handing back a plain stored value. `@property` isn't special syntax with independent implementation — it's a reusable, general-purpose descriptor with convenient decorator sugar wrapped around its construction.
+
+**Q — Interview (senior):** Compare implementing auto-registration of every subclass via a metaclass vs. `__init_subclass__`, and justify which you'd ship.
+**A:** `__init_subclass__` is the simpler, more readable choice for straightforward auto-registration — it doesn't require the reader to understand full metaclass machinery just to see "every subclass gets appended to a list," and it composes more predictably with other classes in the hierarchy. A full custom metaclass is only genuinely justified when you need to intercept or rewrite the class *namespace itself* at creation time (renaming attributes, injecting new ones, enforcing structural rules across the entire class body) — plain registration doesn't need that level of control. Ship `__init_subclass__` for this specific requirement.
+
+**Q — Advanced:** "A junior engineer is confused why `instance.some_method` works even though they never explicitly bound `self`. Explain, using the descriptor protocol, how plain functions become bound methods on instance access."
+**A:** A plain function object implements `__get__` (making it a non-data descriptor — no `__set__`), even though this usually goes unnoticed. When a function is stored as a class attribute and accessed via an instance (`instance.some_method`), Python's attribute lookup finds that descriptor and calls its `__get__`, which returns a *bound method* object — a wrapper with `self` already filled in as the instance. That's the entire mechanism behind `instance.method(x)` being equivalent to `Class.method(instance, x)` — no special-cased binding syntax is involved; it's the same descriptor protocol `@property` uses, applied to ordinary functions.
 
 ---
 

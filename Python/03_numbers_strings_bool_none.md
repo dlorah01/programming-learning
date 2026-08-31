@@ -164,6 +164,8 @@ if len(my_list) == 0:
 
 ## 2.7 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:**
 ```python
 print(-7 // 2, -7 % 2, 7 // -2, 7 % -2)
@@ -182,6 +184,52 @@ print(True + True + True == 3)
 **Interview — senior:** "A function receives a dict that may or may not have a `'count'` key, where a present-but-zero count is meaningfully different from an absent key. Show how `dict.get` alone is insufficient here, and how you'd distinguish the two cases correctly." (Hint: this is a "explicit is better than implicit" design question, and it foreshadows the sentinel-object pattern.)
 
 **Advanced / FAANG-style:** "Why is `bool` a subclass of `int` in Python, historically — and what real, exploitable consequence does that have for someone writing `sum(1 for x in items if predicate(x))` style counting code?" (Connects forward to generator expressions in Module 6.)
+
+---
+
+## 2.8 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+print(-7 // 2, -7 % 2, 7 // -2, 7 % -2)
+print(bool(""), bool("0"), bool([0]), bool({}))
+print(True + True + True == 3)
+```
+**A:** First line: `-4 1 -4 -1`. Verified term by term: `-7 // 2` floors `-3.5` toward negative infinity → `-4`. `-7 % 2` = `-7 - 2*(-7//2)` = `-7 - 2*(-4)` = `-7 + 8` = `1`. `7 // -2` floors `-3.5` → `-4`. `7 % -2` = `7 - (-2)*(7//-2)` = `7 - (-2)*(-4)` = `7 - 8` = `-1`.
+Second line: `False True True False`. `bool("")` is `False` (empty string); `bool("0")` is `True` (a non-empty string, regardless of its content); `bool([0])` is `True` (a non-empty list — the falsy `0` *inside* it doesn't matter, only the list's own emptiness does); `bool({})` is `False` (empty dict).
+Third line: `True` — `bool` is an `int` subclass, so `True + True + True` evaluates to `3`, and `3 == 3` is `True`.
+
+**Q — Core:** Write a function that safely divides two numbers, returning `None` on division by zero instead of letting `ZeroDivisionError` propagate, and use the `is None` idiom correctly in a caller that consumes it.
+**A:**
+```python
+def safe_divide(a, b):
+    if b == 0:
+        return None
+    return a / b
+
+result = safe_divide(x, y)
+if result is None:
+    handle_division_by_zero()
+else:
+    use(result)
+```
+
+**Q — Debugging:** A teammate's currency-summing function uses native `float` and their totals are off by fractions of a cent in production. Explain the root cause precisely and name the correct fix.
+**A:** Root cause: `float` is IEEE-754 binary floating point, which cannot represent most decimal fractions (including something as simple as `0.1`) exactly in binary — every arithmetic operation on these inexact approximations can introduce small rounding error, and those errors accumulate across repeated addition/multiplication. Fix: use `decimal.Decimal`, which represents decimal fractions exactly, for any currency arithmetic — or work entirely in integer cents and only convert to a display format at the boundary.
+
+**Q — Interview (junior):** "What does `bool([])` return, and why? Contrast with JavaScript's `Boolean([])`."
+**A:** `bool([])` is `False` — Python bases container truthiness purely on emptiness. JavaScript's `Boolean([])` is `true` — an empty array is truthy in JS, a genuine, frequently-bug-causing divergence when porting conditionals between the two languages.
+
+**Q — Interview (mid):** "Explain the difference between `//` and `/` in Python 3, and what happens with negative operands specifically."
+**A:** `/` is true division, always returning a `float`. `//` is floor division — it rounds the mathematical result toward negative infinity, not toward zero, so it diverges from simple truncation once negative operands are involved: `-7 // 2` is `-4`, not `-3`.
+
+**Q — Interview (senior):** "A function receives a dict that may or may not have a `'count'` key, where a present-but-zero count is meaningfully different from an absent key. Show how `dict.get` alone is insufficient here, and how you'd distinguish the two cases correctly."
+**A:** `dict.get('count')` alone is insufficient *only* if it's consumed carelessly — the common trap is `if not d.get('count'):`, which treats a genuinely present `0` identically to a missing key, since both are falsy. Used correctly, though, `.get()` fully distinguishes the two cases: `result = d.get('count'); if result is None: # genuinely absent` vs. `else: # present, and could legitimately be 0`. The lesson is precise: `.get()` itself is sufficient, but only when checked with `is None` — a truthiness check on its return value is what actually loses the distinction.
+
+**Q — Advanced:** "Why is `bool` a subclass of `int` in Python, historically — and what real consequence does that have for `sum(1 for x in items if predicate(x))`-style counting code?"
+**A:** `bool` didn't exist as a dedicated type until Python 2.3 (2003); when it was added, it was retrofitted as an `int` subclass specifically to preserve backward compatibility with existing code that used plain `0`/`1` as booleans. Consequence: `sum(1 for x in items if predicate(x))` is a real, idiomatic counting pattern — but because `True`/`False` themselves sum as `1`/`0`, it can be written even more tersely as `sum(predicate(x) for x in items)`, summing the booleans directly. Recognizing this shorthand is useful for reading terser real-world code, even if the more explicit `1 for x in ... if ...` form is often clearer to write.
 
 ---
 

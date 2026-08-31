@@ -157,6 +157,8 @@ This is *the* defining "does this person actually understand asyncio" interview/
 
 ## 13.7 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:**
 ```python
 import asyncio
@@ -182,6 +184,44 @@ asyncio.run(main())
 **Interview — senior:** "Design the concurrency model for a service that needs to: (a) make hundreds of concurrent outbound API calls, (b) run a CPU-heavy validation step on each response, and (c) write results to a database. Justify which of `threading`/`multiprocessing`/`asyncio` (or a combination) fits each stage."
 
 **Advanced / FAANG-style:** "Explain, precisely, why `counter += 1` performed by four threads in a loop can produce a final count less than the true total, given the GIL — walk through the actual bytecode-level interleaving that causes lost updates, referencing what you learned about bytecode in Module 0."
+
+---
+
+## 13.8 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+import asyncio
+async def task(n):
+    await asyncio.sleep(n)
+    print(f"task {n} done")
+
+async def main():
+    await asyncio.gather(task(2), task(1), task(3))
+
+asyncio.run(main())
+```
+**A:** Print order: `task 1 done`, `task 2 done`, `task 3 done` — all three tasks start concurrently at time zero (as soon as `gather` schedules them), and each one simply finishes and prints whenever its own `sleep` duration elapses, independent of the order they were listed in `gather(...)`. Total wall-clock time is roughly 3 seconds (the longest individual sleep), not 6 seconds (the sum) — they overlap rather than running sequentially.
+
+**Q — Core:** Write a `threading`-based and an `asyncio`-based version of a function fetching 10 URLs concurrently, and explain which you'd choose alongside a synchronous ORM you don't control.
+**A:** Threading version: a `ThreadPoolExecutor` (or manually managed `Thread` objects) each calling synchronous `requests.get` per URL, joined at the end. Asyncio version: `aiohttp` or `httpx.AsyncClient` with `asyncio.gather` over one coroutine per URL. Given a synchronous ORM you don't control elsewhere in the same request path: **threading** — since the ORM can't be awaited natively, using it inside `async def` code would hit the blocking-call-stalls-the-event-loop trap (Module 13.4); threading sidesteps that entirely, since it never requires the whole call chain to be async-native.
+
+**Q — Debugging:** An `asyncio`-based service degrades badly under load, and a `time.sleep(0.1)` "quick rate-limiting hack" is buried in one handler. Explain why this single line degrades the *entire* service.
+**A:** `asyncio` is single-threaded and cooperative — coroutines only yield control back to the event loop at genuine `await` points on awaitable operations. A synchronous, blocking call like `time.sleep()` inside *any* `async def` handler doesn't yield at all — it blocks the single thread the entire event loop runs on for its full duration, stalling *every other* in-flight coroutine across *every other concurrent request*, not just the one that called `time.sleep`. Under load, with many concurrent requests, this compounds — each 0.1-second block delays potentially dozens of unrelated in-flight requests simultaneously, degrading the service's overall throughput far beyond what the isolated 0.1-second delay would suggest.
+
+**Q — Interview (junior):** "What does the GIL actually prevent, precisely? What does it not prevent?"
+**A:** It prevents more than one thread from executing Python bytecode at the exact same instant, even on a multi-core machine — a direct consequence of CPython's reference counting not being thread-safe without it. It does not prevent creating or running multiple threads at all, does not prevent real concurrency benefit for I/O-bound work (the GIL releases during blocking I/O), and does not make compound operations like `counter += 1` atomic — race conditions on such operations remain fully possible and still require explicit locking.
+
+**Q — Interview (mid):** "You need to process 1,000 large images with a CPU-heavy filter. `threading` or `multiprocessing`? What changes if the filter is actually a NumPy/OpenCV call?"
+**A:** `multiprocessing` — a CPU-heavy pure-Python filter gets no real parallelism from threading due to the GIL; separate OS processes, each with their own GIL, genuinely run in parallel across cores. If the "CPU-heavy filter" is actually implemented as a NumPy/OpenCV call, `threading` becomes a viable, often simpler alternative too — those libraries' C implementations release the GIL during the actual heavy computation, so the real parallel work happens inside C, outside the GIL's reach, even though it was invoked from a Python thread.
+
+**Q — Interview (senior):** Design the concurrency model for a service that makes hundreds of concurrent API calls, runs CPU-heavy validation on each response, and writes results to a database.
+**A:** Outbound API calls: `asyncio` with an async HTTP client (`httpx.AsyncClient`/`aiohttp`) — I/O-bound, and `asyncio` scales to hundreds/thousands of concurrent operations far more cheaply than an equivalent number of OS threads would. CPU-heavy validation: `multiprocessing.Pool` — genuinely CPU-bound pure-Python work needs real parallelism across cores, which neither `asyncio` nor `threading` provide. Database writes: likely batched async writes if the driver supports async natively (I/O-bound, fits the same reasoning as the API calls), or a thread pool if stuck with a synchronous driver — either way, avoid routing synchronous DB calls directly inside the async event loop's coroutines without one of these accommodations, to avoid the blocking-call trap.
+
+**Q — Advanced:** "Explain, precisely, why `counter += 1` performed by four threads in a loop can produce a final count less than the true total, given the GIL — walk through the actual bytecode-level interleaving."
+**A:** `counter += 1` compiles to multiple separate bytecode operations — roughly: load the current value of `counter`, load the constant `1`, add them, store the result back into `counter`. The GIL guarantees each *individual* bytecode instruction executes atomically, but not that this entire multi-instruction sequence executes as one atomic unit — CPython can switch which thread is running between any of these steps. Concretely: Thread A loads `counter=5`, then gets switched out before it stores its computed result; Thread B then loads the same `counter=5` (A's increment hasn't been stored yet), computes `6`, and stores it; Thread A then resumes exactly where it left off, computes its own `5 + 1 = 6` (using the stale value it loaded earlier), and stores `6` — overwriting Thread B's update entirely. One increment is silently lost. Repeated across many such interleavings over 400,000 total increments, the final count reliably ends up below 400,000.
 
 ---
 

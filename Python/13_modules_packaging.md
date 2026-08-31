@@ -120,6 +120,8 @@ A virtual environment is, mechanically, a lightweight, mostly-symlinked copy of 
 
 ## 12.7 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:** Given `a.py` importing `b.py` which imports `a.py` back, where `b.py` tries to call a function from `a.py` defined *after* the `import b` line in `a.py` — trace through the exact `ImportError`/`AttributeError` that results, referencing `sys.modules` state precisely.
 
 **Core:** Structure a small package (`mypkg/__init__.py`, `mypkg/core.py`, `mypkg/utils.py`) such that `from mypkg import CoreThing` works, even though `CoreThing` is actually defined in `core.py` — using `__init__.py`'s re-export role correctly.
@@ -133,6 +135,38 @@ A virtual environment is, mechanically, a lightweight, mostly-symlinked copy of 
 **Interview — senior:** "Your team is starting a new production service. Justify a dependency-management tool choice (`pip`+`requirements.txt`, `poetry`, or `uv`), considering reproducibility, CI speed, and onboarding friction for engineers coming from a Node/JS background."
 
 **Advanced / FAANG-style:** "Diagnose and fix a real circular import between two modules that genuinely need functions from each other, without simply merging them into one file — discuss at least two structurally different fixes (deferred/local import vs. extracting shared logic to a third module) and the tradeoffs between them."
+
+---
+
+## 12.8 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:** Given `a.py` importing `b.py`, which imports `a.py` back, where `b.py` tries to call a function from `a.py` defined *after* the `import b` line in `a.py` — trace through the exact error.
+**A:** If `a.py` is run/imported first: `sys.modules['a']` is created and `a.py` begins executing top to bottom. It reaches `import b`, which begins executing `b.py`. `b.py` reaches `import a` — since `'a'` is already in `sys.modules` (even though only partially executed — only whatever ran before the `import b` line actually exists on that module object), Python returns that same partial module object rather than re-running `a.py` from scratch. If `b.py` then immediately tries to access a name from `a` that's defined *after* the `import b` line in `a.py`'s own source, that name simply doesn't exist yet on the partial module object — the result is `AttributeError: module 'a' has no attribute '<name>'`, raised from within `b.py`'s attempt to use it.
+
+**Q — Core:** Structure a package so `from mypkg import CoreThing` works, even though `CoreThing` is actually defined in `core.py`.
+**A:**
+```
+mypkg/__init__.py:  from .core import CoreThing
+mypkg/core.py:       class CoreThing: ...
+```
+`__init__.py` runs when `mypkg` is imported, and its `from .core import CoreThing` line pulls `CoreThing` into `mypkg`'s own namespace — so `from mypkg import CoreThing` works directly, without callers needing to know it actually lives in `mypkg.core`.
+
+**Q — Debugging:** A teammate reports `ModuleNotFoundError: No module named 'requests'` despite having run `pip install requests` minutes earlier. Walk through the likely causes in priority order.
+**A:** (1) The install happened in a different virtual environment than the one actually being used to run the script — the single most common cause. (2) No virtual environment was active at all, and the install went to a different Python installation's site-packages than the one currently on `PATH`. (3) The IDE/terminal is configured to use a different interpreter than expected — confirm with `which python` and `which pip` (or `python -m pip show requests`) that they point at the same interpreter actually running the script.
+
+**Q — Interview (junior):** "What does `if __name__ == '__main__':` actually check, and why is it idiomatic to wrap script entry-point logic in it?"
+**A:** It checks whether the current module is being run directly (`__name__` is set to `"__main__"`) versus being imported by something else (`__name__` is instead set to the module's own dotted name). Wrapping entry-point logic in it lets a file serve double duty as both a reusable, importable module and a directly-runnable script, without the act of importing it accidentally triggering script-only side effects (like parsing `sys.argv` or immediately running a CLI command).
+
+**Q — Interview (mid):** "Explain why Python needs virtual environments as an explicit, separate concept, when Node's `npm install` gives you project-scoped dependencies automatically."
+**A:** `pip install` is global (or user-wide) by default, with no automatic per-project scoping built into the tool itself — two projects requiring incompatible versions of the same library would directly conflict without some isolation mechanism. Node's `npm install` writes into a project-local `node_modules/` folder automatically, so project-level isolation is simply the default, built-in behavior with zero extra step required. Python instead requires explicitly opting into that isolation by creating and activating a virtual environment per project.
+
+**Q — Interview (senior):** Justify a dependency-management tool choice (`pip`+`requirements.txt`, `poetry`, or `uv`) for a new production service, considering reproducibility, CI speed, and onboarding friction for Node-background engineers.
+**A:** `uv` is a strong default recommendation for a new service: its `pyproject.toml` + lockfile model maps closely onto the `package.json` + `package-lock.json` mental model a Node-background team already has, its dependency resolution and install speed are dramatically faster than `pip`'s (real CI time savings at scale), and it remains standards-compliant with the broader `pyproject.toml` ecosystem. `poetry` is an equally defensible, more battle-tested alternative with a longer production track record. Raw `pip` + `requirements.txt` is the weakest choice for a *new* production service specifically because of its weaker reproducibility guarantee without a real, automatically-maintained lockfile — a genuine regression from what an `npm`-based team would already be used to.
+
+**Q — Advanced:** Diagnose and fix a genuine circular import between two modules that both need functions from each other, without merging them into one file.
+**A:** Fix 1 — deferred/local import: move the problematic `import` statement inside the specific function that needs it, so it executes at call time rather than at module-import time (by which point both modules have already finished their top-level execution) — quick to apply, but can read as a code smell if it happens in more than one or two places. Fix 2 — extract the genuinely shared logic into a third module (`shared.py`) that both original modules import from instead of importing each other — more structurally correct, since it actually removes the circular dependency rather than working around its symptom, but requires correctly identifying what's truly shared versus what's meant to stay separate. Tradeoff: local imports are faster to apply and less invasive but leave the underlying circular *design* dependency intact; extraction takes more upfront work but genuinely resolves the structural issue rather than papering over it.
 
 ---
 

@@ -152,6 +152,8 @@ Set algebra (`|` union, `&` intersection, `-` difference, `^` symmetric differen
 
 ## 9.7 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:**
 ```python
 d = {}
@@ -171,6 +173,66 @@ print(d)
 **Interview — senior:** "Design the data structures for a real-time leaderboard that needs frequent 'get top 10' queries and frequent score updates for arbitrary players. Compare a sorted list, a `heapq`, and a balanced structure, and justify a choice given the actual read/write frequency tradeoffs."
 
 **Advanced / FAANG-style:** "Implement an LRU cache using `dict` + `deque` (or `OrderedDict`'s `move_to_end`), achieving O(1) get and put. Explain precisely which dict/deque properties from this module make O(1) possible, and where a naive list-based approach would degrade to O(n)."
+
+---
+
+## 9.8 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+d = {}
+d.setdefault("a", []).append(1)
+d.setdefault("a", []).append(2)
+print(d)
+```
+**A:** `{'a': [1, 2]}`. The first `setdefault` call finds no `"a"` key, so it inserts a new empty list and returns it; `.append(1)` mutates that list to `[1]`. The second `setdefault` call finds `"a"` already present, so it simply returns the *existing* list (ignoring the freshly-constructed `[]` it was passed as a would-be default, since that default is only used if the key were actually missing); `.append(2)` mutates the same list to `[1, 2]`.
+
+**Q — Core:** Given a stream of log-line dicts, write an efficient function returning the top-5 most frequent `status_code` values using `Counter`, and explain its complexity vs. a hand-rolled `defaultdict(int)` + manual sort.
+**A:**
+```python
+from collections import Counter
+
+def top_status_codes(logs, n=5):
+    return Counter(log["status_code"] for log in logs).most_common(n)
+```
+`Counter.most_common(n)` uses a heap-based partial selection under the hood, roughly O(u log n) where `u` is the number of unique status codes — versus a hand-rolled `defaultdict(int)` accumulation followed by a full `sorted()` over every unique key, which is O(u log u). `Counter`'s approach is at least as good, typically better for small `n`, and considerably more concise.
+
+**Q — Debugging:** A function processes a queue by repeatedly doing `item = queue.pop(0)` inside a `while queue:` loop, and profiling shows it's the dominant cost in a hot path processing 100k items. Diagnose and fix.
+**A:** `list.pop(0)` is O(n) — every remaining element must shift one slot to the left to fill the gap — so repeatedly popping from the front of a list in a loop makes the whole operation O(n²) across n items, not O(n). Fix: use `collections.deque` and `.popleft()`, which is O(1), turning the whole loop back into genuine O(n).
+
+**Q — Interview (junior):** "What's the time complexity of checking `x in my_list` vs `x in my_set`? Why the difference?"
+**A:** `x in my_list` is O(n) — a linear scan with no shortcuts. `x in my_set` is O(1) average case, because `set` is backed by a hash table — the value's hash directly determines which bucket to check, rather than scanning every element.
+
+**Q — Interview (mid):** "Explain, precisely, why Python dict keys must be hashable, and why that means a `list` can never be a dict key but a `tuple` sometimes can and sometimes can't."
+**A:** A dict's hash table implementation locates a key's bucket using that key's hash value — this only works reliably if the hash never changes after the key is inserted. A `list` is mutable and has no `__hash__` at all (explicitly disabled), so it can never be a dict key. A `tuple` is hashable *only if every element it contains is itself hashable* — `hash((1, 2))` works fine, but `hash((1, [2, 3]))` raises `TypeError`, because the tuple's own hash computation would need to hash its unhashable list element. The tuple's outer "shape" (its length, which slots hold which references) is fixed and immutable either way — but whether it's actually usable as a dict key depends recursively on what's inside it.
+
+**Q — Interview (senior):** Design the data structures for a real-time leaderboard needing frequent "get top 10" queries and frequent score updates for arbitrary players.
+**A:** A sorted list gives O(1) top-10 access (just slice the front) but O(n) insertion for arbitrary score updates (shifting to maintain order) — poor fit if updates are frequent. `heapq` gives O(log n) updates and O(k log n) top-k retrieval via `heapq.nlargest` — a reasonable middle ground when both operations happen often, though it doesn't natively support O(1) "update this specific player's score" without extra bookkeeping (heaps don't support efficient arbitrary-element updates by key out of the box). A balanced/ordered structure (e.g., a skip list, or an external sorted-set store like Redis's `ZADD`/`ZRANGE`) gives O(log n) for both inserts/updates and ordered range queries, and is the standard real-world choice at genuine production scale specifically because it handles frequent updates *and* frequent top-k reads well simultaneously — justified over `heapq` once per-player score updates (not just insertions) are frequent enough that `heapq`'s lack of native arbitrary-key updates becomes a real limitation.
+
+**Q — Advanced:** Implement an LRU cache achieving O(1) get and put (using `dict` + `deque`, or `OrderedDict`'s `move_to_end`), and explain which properties make O(1) possible.
+**A:** First, why a *raw* `deque` isn't quite enough: `deque` gives O(1) at both ends, but moving an already-present key to the most-recent end means finding and removing it from the middle first, which is O(n) on a `deque`. The O(1) structure is a hash map plus a **doubly-linked list** (O(1) unlink-and-reinsert given a node reference) — which is exactly what `OrderedDict` is internally, so the idiomatic implementation just uses it:
+```python
+from collections import OrderedDict
+
+class LRUCache:
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.data = OrderedDict()
+    def get(self, key):
+        if key not in self.data:
+            return None
+        self.data.move_to_end(key)
+        return self.data[key]
+    def put(self, key, value):
+        if key in self.data:
+            self.data.move_to_end(key)
+        self.data[key] = value
+        if len(self.data) > self.capacity:
+            self.data.popitem(last=False)
+```
+O(1) is possible because `dict`/`OrderedDict` give O(1) key→value lookup, and `OrderedDict.move_to_end`/`popitem` give O(1) reordering-to-most-recent and O(1) eviction-from-least-recent respectively — both are backed by an internal doubly-linked-list-plus-hash-table structure specifically designed for these two operations to be constant time. A naive list-based approach would need an O(n) linear scan to find the accessed key and then O(n) to reposition it within the list, degrading every operation to O(n).
 
 ---
 

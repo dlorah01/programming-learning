@@ -199,6 +199,8 @@ class PointSlots:
 
 ## 7.8 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:**
 ```python
 class Base:
@@ -225,6 +227,80 @@ print(Child.__mro__)
 **Interview — senior:** "You're processing 50 million small immutable coordinate objects in memory for a geospatial pipeline. Compare a `@dataclass`, a `@dataclass(slots=True)` (3.10+ shortcut for `__slots__`), and a plain `namedtuple`/`tuple` for this use case, in terms of memory and access performance, and justify a choice."
 
 **Advanced / FAANG-style:** "Design a small mixin-based plugin system (e.g., `Loggable`, `Serializable`, `Cacheable` mixins combined via multiple inheritance into concrete classes) and explain, using MRO reasoning, how you'd guarantee predictable method resolution as the number of mixins grows — and at what point you'd recommend switching to composition instead."
+
+---
+
+## 7.9 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+class Base:
+    def who(self): return "Base"
+class Left(Base):
+    def who(self): return "Left"
+class Right(Base):
+    def who(self): return "Right"
+class Child(Left, Right):
+    pass
+
+print(Child().who())
+print(Child.__mro__)
+```
+**A:** `"Left"`, then `(Child, Left, Right, Base, object)`. Under C3 linearization, `Child`'s MRO walks its own listed bases in order — `Left` first, then `Right` — before falling through to their shared ancestor `Base`, so `Left.who()` is found and used first.
+
+**Q — Core:** Implement a `Vector` class supporting `+`, `-`, `==`, `repr`, and `len` purely through dunder methods, then demonstrate it working with native syntax.
+**A:**
+```python
+class Vector:
+    def __init__(self, *components):
+        self.components = components
+    def __add__(self, other):
+        return Vector(*(a + b for a, b in zip(self.components, other.components)))
+    def __sub__(self, other):
+        return Vector(*(a - b for a, b in zip(self.components, other.components)))
+    def __eq__(self, other):
+        return isinstance(other, Vector) and self.components == other.components
+    def __repr__(self):
+        return f"Vector{self.components}"
+    def __len__(self):
+        return len(self.components)
+
+v1, v2 = Vector(1, 2), Vector(3, 4)
+print(v1 + v2)          # Vector(4, 6)
+print(v1 == Vector(1, 2))  # True
+print(len(v1))            # 2
+```
+
+**Q — Debugging:** A developer adds `__eq__` to an existing class so instances compare by value, and existing code that stored instances in a `set()` starts raising `TypeError: unhashable type`. Explain precisely why, and fix it correctly.
+**A:** By default, `object.__hash__` is identity-based, matching `object.__eq__`'s default identity comparison — the two stay consistent. Overriding `__eq__` to mean structural/value equality breaks that consistency (two distinct objects can now be "equal" while still having different identity-based hashes), so Python automatically sets `__hash__ = None` on the class the moment `__eq__` is defined without also defining `__hash__` — making instances unhashable specifically to prevent silently-broken dict/set behavior. Correct fix: define `__hash__` explicitly, based on the same fields used in `__eq__` (e.g. `def __hash__(self): return hash((self.x, self.y))`) — not deleting the new `__eq__`, which would abandon the actual feature being added.
+
+**Q — Interview (junior):** "What's the difference between `__init__` and `__new__`? When would you ever need to override `__new__`?"
+**A:** `__new__(cls, ...)` actually creates and returns the instance (implicitly a static method); `__init__(self, ...)` receives that already-created instance and initializes its state, returning nothing. `SomeClass(...)` calls `__new__` first, then `__init__` on whatever `__new__` returned (if it's an instance of `cls`). You'd override `__new__` when subclassing an immutable built-in type (there's no way to set state in `__init__` after the fact, since the object is already frozen by then) or to implement patterns like a Singleton that need to control instance creation itself.
+
+**Q — Interview (mid):** Convert a hand-written getter/setter pair enforcing a non-negative `balance` into idiomatic Python using `@property`, and explain why starting with a plain attribute and "upgrading" later is good practice.
+**A:**
+```python
+class Account:
+    def __init__(self, balance):
+        self._balance = balance
+    @property
+    def balance(self):
+        return self._balance
+    @balance.setter
+    def balance(self, value):
+        if value < 0:
+            raise ValueError("balance cannot be negative")
+        self._balance = value
+```
+Starting with a plain public attribute is good practice because the call-site syntax (`account.balance`, `account.balance = x`) is *identical* whether it's backed by a plain attribute or a `@property` — callers never need to know or care which. This means you can add validation/computed behavior later, precisely when it's actually needed, without ever touching any code that already calls into the class.
+
+**Q — Interview (senior):** Compare `@dataclass`, `@dataclass(slots=True)`, and a plain `namedtuple`/`tuple` for 50 million small immutable coordinate objects, in terms of memory and access performance.
+**A:** Plain `@dataclass`: each instance carries a per-instance `__dict__` (a real hash table) for its attributes — the most memory overhead of the three, but the most flexible (dynamic attribute addition still works). `@dataclass(slots=True)`: fixed, array-style attribute slots instead of a `__dict__` — meaningfully less memory per instance and marginally faster attribute access (array-offset lookup instead of hash-table lookup), at the cost of losing dynamic attribute addition. `namedtuple`/plain `tuple`: no per-instance `__dict__` at all, and no descriptor-based attribute machinery — generally the most memory-compact and fastest-to-construct of the three, immutable by nature, with positional (and, for `namedtuple`, named) access. At 50 million instances, the memory difference between these options is genuinely significant in aggregate — `slots=True` or `namedtuple` are the realistic choices; a plain `@dataclass` would likely be memory-prohibitive at that scale.
+
+**Q — Advanced:** Design a mixin-based plugin system and explain, using MRO reasoning, how you'd guarantee predictable method resolution as the number of mixins grows — and when you'd switch to composition instead.
+**A:** Design each mixin to be small and single-purpose (`LoggableMixin`, `SerializableMixin`, `CacheableMixin`), each implementing exactly one clearly-named method or small set of methods, and deliberately avoid having two mixins define methods with the same name unless one is explicitly meant to override the other in a well-understood way — this keeps C3 linearization's resulting MRO predictable, since there's no genuine ambiguity about which mixin's implementation should "win." As the number of mixins grows, MRO reasoning stays tractable exactly as long as this "no accidental name collisions" discipline holds; once mixins start needing to coordinate with each other's internal state, or once enough of them combine that reasoning about resolution order stops being obvious at a glance, that's the concrete signal to switch to composition instead — each capability becomes an object the main class holds a reference to (`self.logger`, `self.serializer`) and delegates to explicitly, trading a bit of call-site verbosity for a design that no longer depends on inheritance-order reasoning at all.
 
 ---
 

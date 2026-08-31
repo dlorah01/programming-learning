@@ -122,6 +122,8 @@ Genuinely idiomatic for memoization/caching patterns where you want cached resul
 
 ## 14.6 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:**
 ```python
 import gc
@@ -151,6 +153,59 @@ print(gc.collect())   # what does this return, and why is it nonzero despite ref
 **Interview — senior:** "You're building an in-memory cache for expensive computed results in a long-running service. Compare a plain `dict`, `functools.lru_cache(maxsize=N)`, and `weakref.WeakValueDictionary` for this use case, and justify a choice given that some cached objects are large and memory pressure is a real production concern."
 
 **Advanced / FAANG-style:** "Explain precisely why the CPython free-threaded (no-GIL) build is a genuinely hard engineering problem specifically because of reference counting, connecting this back to what you learned about the GIL in Module 13 and refcounting here."
+
+---
+
+## 14.7 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+import gc
+class Node:
+    def __init__(self): self.ref = None
+
+gc.disable()
+a = Node(); b = Node()
+a.ref = b; b.ref = a
+del a, b
+print(gc.collect())
+```
+**A:** A nonzero count — commonly `2`, reflecting the two `Node` instances (the exact number can vary slightly by Python version/implementation detail in what's counted, but it will not be `0`). `gc.disable()` only stops the collector's *automatic*, periodic collection passes — it does not prevent an explicit, manual `gc.collect()` call from running a full collection cycle on demand. Since `a` and `b` reference each other and nothing else references either after `del a, b`, pure reference counting can never free them (each still holds a refcount of 1, from the other) — but the manually-triggered cycle collector finds and frees exactly this pattern, and its return value reflects that it found and collected them.
+
+**Q — Core:** Implement an observer pattern using `weakref` so observers can be garbage collected normally, and demonstrate the difference vs. a plain-list version.
+**A:**
+```python
+import weakref
+
+class Subject:
+    def __init__(self):
+        self._observers = []
+    def subscribe(self, obs):
+        self._observers.append(weakref.ref(obs))
+    def notify(self, event):
+        for ref in self._observers:
+            obs = ref()
+            if obs is not None:
+                obs.update(event)
+```
+A plain-list version (`self._observers.append(obs)`, holding strong references) would keep every subscribed observer alive for as long as `Subject` exists, even after nothing else in the program references them anymore — a real, silent memory leak in a long-running service. The `weakref` version lets observers be collected normally once their only other references disappear, with `Subject.notify` simply skipping dead entries (where `ref()` returns `None`) rather than keeping them artificially alive.
+
+**Q — Debugging:** A `tracemalloc` snapshot shows thousands of small `TreeNode` objects with `.parent`/`.children` references never being freed, and memory grows steadily over days. Diagnose and propose a fix.
+**A:** `.parent`/`.children` bidirectional references form exactly the reference-cycle shape described in Module 14.2 — each child points up to its parent while the parent points down to it, so plain reference counting can never free any node in such a structure on its own, even after external code stops referencing the tree, since each node still holds a nonzero refcount from its immediate relatives. If these cycles are accumulating faster than the automatic cycle collector reclaims them (or if `gc` was disabled somewhere, intentionally or accidentally), memory grows steadily. Fix: confirm the cycle collector is actually enabled (`gc.isenabled()`), and/or break the cycle structurally by making one direction a `weakref` — typically `.parent`, since a tree genuinely doesn't need the parent pointer to keep the parent object alive; a child shouldn't be what's preventing its parent from being collected.
+
+**Q — Interview (junior):** "How does CPython know when to free an object's memory? What's the very first thing that happens?"
+**A:** Every object carries an internal reference count (`ob_refcnt`), incremented whenever a new reference to it is created (assignment, being stored in a container, passed as an argument) and decremented whenever a reference is lost (rebinding, `del`, going out of scope, removal from a container). The moment that count reaches zero, the object is deallocated immediately, synchronously, at that exact point in program execution — that's the very first and primary mechanism, happening for the vast majority of objects with no separate GC pass ever needed.
+
+**Q — Interview (mid):** "Why can't reference counting alone handle every case? Give a concrete example of an object graph it fails to collect, and name the additional mechanism CPython uses."
+**A:** Reference counting fails on reference cycles — two or more objects that reference each other (directly, or through a chain), with no external reference to any of them. Concretely: `a = Node(); b = Node(); a.ref = b; b.ref = a; del a, b` — after this, each `Node` still has a refcount of 1 (from the other), so neither ever reaches zero, and pure refcounting would leak both forever. CPython's additional mechanism is a separate, generational, tracing cycle-detecting garbage collector (the `gc` module), which periodically scans for and frees exactly this kind of unreachable cyclic structure that refcounting structurally cannot resolve.
+
+**Q — Interview (senior):** Compare a plain `dict`, `lru_cache(maxsize=N)`, and `WeakValueDictionary` for an in-memory cache of expensive computed results, given large cached objects and real memory-pressure concerns.
+**A:** Plain `dict`: simplest, but grows unbounded and keeps every cached object alive forever regardless of memory pressure — a poor fit given the stated concern. `lru_cache(maxsize=N)`: bounded by *count*, evicting least-recently-used entries once the limit is hit — but eviction is based purely on access recency, not on actual memory pressure or object size, so a fixed `maxsize` may be badly sized if cached objects vary a lot in size. `WeakValueDictionary`: lets individual cached objects be reclaimed automatically as soon as nothing else references them, meaning it responds to genuine memory/reference pressure rather than an arbitrary count — the best fit specifically because the stated concern is memory *size*, not access-frequency management; the real tradeoff is that entries can disappear sooner than might be desired if nothing else in the program happens to hold a reference to a given cached object at the time.
+
+**Q — Advanced:** "Explain, connecting back to the GIL, why the CPython free-threaded (no-GIL) build is a genuinely hard engineering problem specifically because of reference counting."
+**A:** Without the GIL's blanket single-thread-at-a-time guarantee, every reference count increment/decrement — which happens constantly, on nearly every operation in the language (assignment, argument passing, container insertion) — now needs to be safe against concurrent modification from multiple threads simultaneously. That means each of these operations must become an atomic operation (or otherwise explicitly synchronized) instead of a plain, unprotected increment/decrement, and atomic operations carry real, measurable per-operation cost compared to the GIL-protected version, which needed no such protection since only one thread could ever be touching a refcount at a time. This is precisely why the free-threaded build currently costs meaningful single-threaded performance, and why the CPython team has spent years on mitigations (like biased/deferred reference counting schemes) rather than treating it as a simple matter of removing one lock.
 
 ---
 

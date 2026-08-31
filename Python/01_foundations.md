@@ -34,7 +34,7 @@ Each file stands alone but assumes everything before it. Let's start.
 
 **Intuition.** "Python" is a language *specification* (behavior, syntax, semantics) — not one binary. This is exactly like "JavaScript" (ECMAScript spec) vs. V8/SpiderMonkey/JavaScriptCore. When you type `python3` in your terminal, you are almost certainly running **CPython**, the reference implementation, written in C, maintained by the CPython core team and the Python Software Foundation.
 
-**Technical explanation — what "interpreter" means here.** CPython is not a pure tree-walking interpreter (it doesn't re-parse and re-execute source text line by line at runtime). It's a **bytecode interpreter**: source → AST → compiled to bytecode (a compact instruction set for a stack-based virtual machine) → bytecode is executed by a C loop (`ceval.c`'s main interpreter loop) that dispatches on opcode. This is architecturally the same shape as the JVM or (pre-JIT) V8: compile to an intermediate representation once, then interpret that IR repeatedly, which is cheaper than reparsing text.
+**Technical explanation — what "interpreter" means here.** CPython is not a pure tree-walking interpreter (it doesn't re-parse and re-execute source text line by line at runtime). It's a **bytecode interpreter**: source → AST (Abstract Syntax Tree) → compiled to bytecode (a compact instruction set for a stack-based virtual machine) → bytecode is executed by a C loop (`ceval.c`'s main interpreter loop) that dispatches on opcode. This is architecturally the same shape as the JVM or (pre-JIT) V8: compile to an intermediate representation once, then interpret that IR repeatedly, which is cheaper than reparsing text.
 
 **The key difference from V8 that will surprise you coming from JS:** V8 has a tiered JIT (Ignition bytecode interpreter → TurboFan JIT compiler that produces actual machine code for hot functions). Standard CPython, as of the versions you'll be using, has **no JIT** — every single execution goes through the bytecode interpreter loop, opcode by opcode, forever. This is the single biggest reason equivalent numeric/loop-heavy code is often 10-50x slower in CPython than in Node. (Python 3.13 introduced an experimental JIT behind a build flag, and 3.14 continues that work, but it's not the default production story yet — treat "CPython has no JIT by default" as the operating assumption for the versions you'll actually deploy.)
 
@@ -150,6 +150,8 @@ Say you're debugging "why is this endpoint slow" in a Flask/FastAPI service. An 
 
 ## 0.7 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Warm-up (predict the output):**
 ```python
 print(hello())
@@ -172,6 +174,37 @@ A teammate says: "I edited `utils.py`, but my script still runs the old version 
 **Interview-style — senior:** "Walk me through what happens, mechanically, from `python app.py` to your first line of business logic executing — mention code objects, `__main__`, and `sys.modules`."
 
 **Advanced / FAANG-style:** "A junior engineer proposes rewriting a CPU-bound Python microservice in PyPy for a 5x speedup with zero code changes. What are the real risks to that plan?" (Hint: think about what depends on the CPython C-API.)
+
+---
+
+## 0.8 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+print(hello())
+def hello(): return "hi"
+```
+**A:** `NameError: name 'hello' is not defined`. Python has no hoisting — `def` is an executable statement that binds the name at the point it runs, top to bottom. At the `print(hello())` line, `hello` doesn't exist in the namespace yet, since its `def` statement hasn't executed.
+
+**Q — Core:** Run `dis.dis` on a function containing an `if`/`else` and identify the jump opcodes. Explain what the operand stack looks like at each step.
+**A:** An `if`/`else` compiles to a comparison opcode followed by a conditional jump (`POP_JUMP_IF_FALSE`, or the version-current equivalent). The comparison result sits briefly on the operand stack; the jump instruction pops it and, if false, redirects execution past the `if` block's bytecode straight to the `else` block's bytecode (or past both if there's no `else`). Whichever branch runs, the stack ends up in the same state — this consistency is required, since the two branches converge back to shared code afterward.
+
+**Q — Debugging:** A teammate says: "I edited `utils.py`, but my script still runs the old version even after I saved." List three hypotheses to check, in priority order.
+**A:** (1) A stale `__pycache__/*.pyc` wasn't invalidated — delete `__pycache__` and rerun. (2) They're editing a different copy of `utils.py` than the one actually being imported (wrong virtual environment, a duplicate file earlier in `sys.path`, or an installed package shadowing the local file). (3) The running process was never actually restarted — a long-lived process (REPL, a server without autoreload) holds the already-imported module object in `sys.modules` and won't re-read the file without a restart, since modules only execute once per process.
+
+**Q — Interview (junior):** "Is Python compiled or interpreted?"
+**A:** Neither in the pop-science sense. Python source is compiled to bytecode — an intermediate representation, produced once — and that bytecode is what's interpreted, opcode by opcode, by CPython's C evaluation loop. Architecturally the same shape as the JVM: compile to an IR, then interpret the IR, with no default JIT step to native machine code.
+
+**Q — Interview (mid):** "Why is CPython slow for tight numeric loops, and what's the actual production fix — not 'switch to PyPy'?"
+**A:** CPython has no JIT by default — every loop iteration re-dispatches through the bytecode interpreter loop with real per-operation overhead that never amortizes away, no matter how many times the loop runs. The real production fix is pushing the hot loop into compiled C — vectorizing with NumPy/pandas, or writing a small C extension — not switching interpreters, which brings its own compatibility risk (see the advanced question below).
+
+**Q — Interview (senior):** "Walk me through what happens, mechanically, from `python app.py` to your first line of business logic executing — mention code objects, `__main__`, and `sys.modules`."
+**A:** The interpreter starts and initializes core built-in types and `sys`/`builtins`. The script's source is tokenized, parsed to an AST, and compiled into a code object (bytecode plus metadata: constants, variable names). That code object executes inside the `__main__` module's namespace, top to bottom, in program order — every `def`/`class`/statement runs exactly once, at this point, with no hoisting. Any `import` encountered checks `sys.modules` first; if the module isn't cached, it's located via `sys.path`, its own top-level code executes once inside a fresh namespace, and the result is cached — so a module imported from multiple places only executes once per process. Business logic starts executing once its containing statement is reached in this pass.
+
+**Q — Advanced:** "A junior engineer proposes rewriting a CPU-bound Python microservice in PyPy for a 5x speedup with zero code changes. What are the real risks?"
+**A:** PyPy's JIT only helps genuinely pure-Python code. If the service depends on C extensions (most real services do — DB drivers, crypto libraries, some web framework internals), those extensions may be PyPy-incompatible outright, or may run without benefiting from PyPy's JIT at all, capping or even negating the expected speedup. There's also real behavioral-compatibility risk (subtle edge-case differences between CPython and PyPy) and a warm-up cost — PyPy's JIT needs sustained "hot" execution to kick in, so short-lived request/response cycles may see little or no benefit.
 
 ---
 

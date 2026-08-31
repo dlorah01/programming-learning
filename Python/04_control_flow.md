@@ -195,6 +195,8 @@ This is precisely why `enumerate`, `zip`, `reversed`, dict `.keys()`/`.values()`
 
 ## 3.7 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:**
 ```python
 for i in range(3):
@@ -225,6 +227,81 @@ for i in range(len(data)):
 **Interview — senior:** "Design the command-parsing logic for a simple text-adventure game's input handler using `match`/`case`, including at least one guard clause and one wildcard/rest-capture pattern. Then explain when you'd refactor this into a class-based command pattern instead — what user-facing complexity would trigger that refactor?"
 
 **Advanced / FAANG-style:** "Explain, mechanically, what `for x in obj` actually does in terms of dunder method calls, and why this design lets `zip`, `enumerate`, and a `for line in file` loop over a multi-gigabyte file without ever loading it entirely into memory." (Direct bridge into Module 6's generators/laziness.)
+
+---
+
+## 3.8 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+for i in range(3):
+    if i == 1:
+        continue
+    print(i)
+else:
+    print("done")
+
+x = [i for i in range(3)]
+print(i)
+```
+**A:** First block: `0`, `2`, `done` — `i=1` is skipped via `continue`, and since the loop completes without ever hitting a `break`, the `else` clause runs. Second block: `print(i)` prints `2` — and the trap here is that this value comes from the **`for` loop above**, not the comprehension. Loops don't create their own scope in Python (the loop variable persists after the loop ends, holding its last-assigned value, `2`), while list comprehensions *do* have their own scope in Python 3 and never leak their loop variable into the enclosing scope. It's easy to misattribute this `2` to the comprehension; it isn't.
+
+**Q — Core:** Rewrite this JS-style transliteration into idiomatic Python:
+```python
+result = []
+for i in range(len(data)):
+    if data[i] > 0:
+        result.append(data[i] * 2)
+```
+**A:**
+```python
+result = [x * 2 for x in data if x > 0]
+```
+
+**Q — Debugging:** A `match` block inside a `for` loop has a `case` ending in `break`, intended to exit the loop early once a match is found — but the loop keeps running. Explain precisely why.
+**A:** `break` inside a `case` block *does* correctly target the nearest enclosing loop (not the `match` statement itself) — if that specific case genuinely matches and its block executes, the `break` will exit the loop exactly as intended. So the bug isn't structural. The much more likely explanation is that the intended `case` simply never matches — either the pattern doesn't structurally match the actual value being matched against, an earlier, more general `case` (or a `case _:` catch-all) intercepts the value first and doesn't contain the `break`, or a guard clause (`case X if condition:`) attached to the intended case is silently failing. Diagnose by checking which `case` is actually executing (add a print, or inspect the matched value's real shape against each pattern) rather than assuming the `break` itself is broken.
+
+**Q — Interview (junior):** "Convert this dict-dispatch pattern to a `match` statement, and explain a scenario where you'd prefer to keep the dict version instead."
+```python
+handlers = {"start": handle_start, "stop": handle_stop}
+handler = handlers.get(command, handle_unknown)
+handler()
+```
+**A:**
+```python
+match command:
+    case "start":
+        handle_start()
+    case "stop":
+        handle_stop()
+    case _:
+        handle_unknown()
+```
+Prefer the dict version when handlers need to be iterated, tested independently, registered dynamically at runtime, or extended by external code without editing the dispatch logic itself — a dict is data, and can be manipulated as data; a `match` statement's cases are fixed at the point they're written.
+
+**Q — Interview (mid):** "Why are list comprehensions generally faster than the equivalent `map()` + `lambda` call in CPython? Be specific about what's different at the bytecode/call-overhead level."
+**A:** A comprehension's loop body compiles to an inlined loop pattern directly in bytecode — no function call happens per element. `map()` with a `lambda` requires a genuine Python function call for every single element, and each call pays real frame-creation overhead (a new frame object, argument binding, etc.) — overhead the inlined comprehension entirely avoids.
+
+**Q — Interview (senior):** "Design the command-parsing logic for a simple text-adventure game's input handler using `match`/`case`, including at least one guard clause and one wildcard/rest-capture pattern. Then explain when you'd refactor this into a class-based command pattern instead."
+**A:**
+```python
+def handle(command):
+    match command.split():
+        case ["go", direction] if direction in ("north", "south", "east", "west"):
+            return move(direction)
+        case ["take", *items]:
+            return take_items(items)
+        case ["look"]:
+            return describe_room()
+        case _:
+            return "I don't understand that."
+```
+This works well while the command grammar stays small and flat. Refactor to a class-based command pattern (each command a class with its own `parse`/`execute`/`help_text`, registered in a lookup structure) once the grammar grows complex enough to need genuine per-command state, help-text generation, undo/redo, or validation logic that would otherwise bloat a single, ever-growing `match` statement past the point of easy readability.
+
+**Q — Advanced:** "Explain, mechanically, what `for x in obj` actually does in terms of dunder method calls, and why this design lets `zip`, `enumerate`, and a `for line in file` loop over a multi-gigabyte file without loading it entirely into memory."
+**A:** `for x in obj` calls `iter(obj)` once, which invokes `obj.__iter__()` and returns an iterator; the loop then repeatedly calls `next()` on that iterator (invoking `__next__()`) until it raises `StopIteration`. Because this protocol only ever needs to answer "what's the next single item," none of the participating objects are required to hold the entire sequence in memory at once — a file object's `__next__` simply reads the next line off disk when asked, `zip`/`enumerate` pull one item at a time from their underlying iterators and combine/tag it, and nothing forces materialization of the whole sequence anywhere in the chain. This is exactly what makes `for line in file:` able to process an arbitrarily large file with roughly constant memory.
 
 ---
 

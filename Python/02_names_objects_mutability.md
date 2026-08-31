@@ -256,6 +256,8 @@ Walk the model: `items=[]` is a default argument, evaluated once at class-defini
 
 ## 1.8 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:**
 ```python
 def f(x, y=[]):
@@ -278,6 +280,57 @@ print(f(3))
 **Interview — senior:** "A function takes a `list` argument, conditionally mutates it in a loop, and returns it. A caller reports intermittent bugs where their original list has extra items they didn't expect. Diagnose the likely cause and propose two different fixes with different tradeoffs (in-place contract vs. defensive copy)."
 
 **Advanced / FAANG-style:** "Explain, at the object-model level, why `frozenset({1, 2, [3,4]})` — wait, why can't you even construct that? What does 'hashable' require in terms of the mutability model from this module, and how does that connect to why dict keys must be hashable?" (This bridges directly into Module 9.)
+
+---
+
+## 1.9 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+def f(x, y=[]):
+    y.append(x)
+    return y
+print(f(1))
+print(f(2, []))
+print(f(3))
+```
+**A:** `[1]`, then `[2]` (a fresh list was explicitly supplied, bypassing the shared default), then `[1, 3]` (reuses the same default list object from the first call, since default arguments are evaluated once, at `def` time).
+
+**Q — Core:** Write a function `deep_flatten(nested_list)` that flattens arbitrarily nested lists without using `copy.deepcopy`, reasoning explicitly about which objects you're creating vs. referencing.
+**A:**
+```python
+def deep_flatten(nested):
+    result = []
+    for item in nested:
+        if isinstance(item, list):
+            result.extend(deep_flatten(item))
+        else:
+            result.append(item)
+    return result
+```
+No `deepcopy` is needed because the function builds a genuinely new flat list from scratch via `append`/`extend` — it never needs to preserve or duplicate the original nested structure, only read values out of it.
+
+**Q — Debugging:** Given the `ShoppingCart` bug (`items=[]` as a mutable default, causing instances to share state), a teammate "fixes" it by writing `self.items = items.copy()` instead of changing the default argument. Does this actually fix the bug?
+**A:** Yes, it does fix the observed symptom, and it's worth tracing through carefully to see why. The default argument itself is still one shared list object, created once at `def` time — that part of the anti-pattern is still technically present. But the bug's *symptom* (one cart's additions showing up in another cart) came specifically from `self.items = items` binding directly to that shared object, so mutating `self.items` on one instance mutated the same object every other instance was pointing at. `self.items = items.copy()` instead creates a brand-new list every time `__init__` runs — so `cart1.items` and `cart2.items` are now two different objects. Because the shared default is never mutated directly anymore (only its copies are), it stays empty forever, and every new instance gets a fresh copy of an always-empty list. So the specific bug goes away. It's still not the recommended fix, for real reasons worth naming: the mutable default remains in the signature as a lingering anti-pattern a linter/reviewer would flag on sight; every instantiation now pays for an unnecessary list copy, even when a caller explicitly passes their own list; and it papers over the underlying issue rather than addressing it the idiomatic way (`items=None` + `if items is None: items = []`), which is both clearer about intent and avoids the wasted copy.
+
+**Q — Interview (junior):** "What's the difference between `is` and `==`? Give an example where they'd return different results for equal-looking objects."
+**A:** `is` checks identity — whether two names point to the exact same object (`id(a) == id(b)`). `==` checks value equality, dispatching to `__eq__`. Example: `a = [1, 2]; b = [1, 2]; a == b` is `True` (same contents), `a is b` is `False` (two distinct list objects).
+
+**Q — Interview (mid):** "Explain why mutable default arguments are dangerous, and show the idiomatic fix."
+**A:** Default argument values are evaluated exactly once, at `def` execution time — a mutable default like `[]` is one single object, shared and mutated across every call that doesn't supply its own. Idiomatic fix:
+```python
+def f(bucket=None):
+    if bucket is None:
+        bucket = []
+```
+
+**Q — Interview (senior):** "A function takes a `list` argument, conditionally mutates it in a loop, and returns it. A caller reports intermittent bugs where their original list has extra items they didn't expect. Diagnose the likely cause and propose two different fixes with different tradeoffs."
+**A:** Likely cause: the function mutates its argument in place (`.append`/`.extend`) rather than treating it as read-only, and the caller didn't expect their original list to change — a direct consequence of Python's pass-by-object-reference semantics (Module 1.4). Fix 1 (in-place contract): keep the mutation, but document and name things so it's unambiguous (e.g. `sort_in_place(lst)`), making the mutation part of the function's clear, expected interface. Fix 2 (defensive copy): `def f(lst): lst = lst.copy(); ...` inside the function, so the caller's original object is never touched — costs one copy, but removes the surprise entirely for callers who assumed value semantics.
+
+**Q — Advanced:** "Why can't you construct `frozenset({1, 2, [3,4]})`? What does 'hashable' require in terms of the mutability model, and how does that connect to why dict keys must be hashable?"
+**A:** A `list` has no `__hash__` (it's mutable, so CPython disables hashing on it) — attempting to put one inside a `frozenset`/`set` raises `TypeError: unhashable type: 'list'`. (Mechanically, in `frozenset({1, 2, [3, 4]})` the inner set-literal `{1, 2, [3, 4]}` is evaluated *first* and is what raises — but a bare `frozenset([1, 2, [3, 4]])` raises the identical error for the identical reason, so the distinction doesn't change the answer.) Hashability requires that an object's hash value never changes for the lifetime of the object — impossible to guarantee for a mutable container, since its contents (and thus what a "correct" hash would be) can change after insertion. This is exactly why dict keys must be hashable: a dict's hash table relies on a key's hash staying constant to reliably find its bucket again on lookup — if a key's hash could silently change after insertion, the dict's internal bucket-based lookup would break, since it would compute a different bucket than the one the key was originally placed in.
 
 ---
 

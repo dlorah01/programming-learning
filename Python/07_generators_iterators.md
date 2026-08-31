@@ -152,6 +152,8 @@ This is niche in everyday application code (you'll rarely hand-write `send`-driv
 
 ## 6.8 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:**
 ```python
 def gen():
@@ -178,6 +180,75 @@ print(next(g))
 **Interview — senior:** "Design a lazy ETL pipeline — read records from a huge lazy source, filter, transform, and write output — using only generators chained together (no intermediate lists). Explain what happens to memory usage as the pipeline runs, and where, if anywhere, you'd deliberately break laziness (e.g., for something that genuinely needs all records at once, like sorting)."
 
 **Advanced / FAANG-style:** "Explain what `yield from` propagates that a plain `for x in sub: yield x` loop does not, and connect this precisely to how you'd expect `await` to behave for a coroutine that awaits another coroutine." (Direct, deliberate bridge into Module 13.)
+
+---
+
+## 6.9 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+def gen():
+    print("start")
+    yield 1
+    print("middle")
+    yield 2
+    print("end")
+
+g = gen()
+print("created")
+print(next(g))
+print(next(g))
+```
+**A:** `created`, then `start`, then `1`, then `middle`, then `2`. Calling `gen()` doesn't execute any of the function body — it just creates a suspended generator object, so `"created"` prints before anything inside `gen` runs. The first `next(g)` resumes execution from the top, printing `"start"`, then pauses at the first `yield`, handing back `1` (printed by the outer `print`). The second `next(g)` resumes right after that `yield`, printing `"middle"`, then pauses at the second `yield`, handing back `2`.
+
+**Q — Core:** Write a generator `chunked(iterable, size)` that yields successive lists of length `size` from any iterable, without materializing the whole input in memory at once.
+**A:**
+```python
+def chunked(iterable, size):
+    chunk = []
+    for item in iterable:
+        chunk.append(item)
+        if len(chunk) == size:
+            yield chunk
+            chunk = []
+    if chunk:
+        yield chunk
+```
+
+**Q — Debugging:** A function processes a 10GB file by doing `lines = list(open(path))` then iterating `lines` twice — it crashes with a memory error in production but worked fine on a small test file. Diagnose and redesign.
+**A:** `list(open(path))` forces the *entire* file into memory as a list of lines at once — fine for a small test file, catastrophic at 10GB. Redesign around generators, and address the "need two passes" requirement by simply opening the file twice — file objects are lazy, sequential iterators, so `for line in open(path): validate(line)` followed by a second, separate `for line in open(path): process(line)` keeps memory roughly constant across both passes, at the cost of reading the file from disk twice. If the two passes' logic can reasonably be combined, a single pass that validates and processes each line together avoids even that second read.
+
+**Q — Interview (junior):** "What's the difference between a list comprehension and a generator expression? When would each be the wrong choice?"
+**A:** Same syntax shape, different brackets — a list comprehension eagerly builds the entire list in memory immediately; a generator expression lazily produces one value at a time on demand. A generator expression is the wrong choice when you need `len()`, indexing, or to iterate more than once (it supports exactly one forward pass, then it's exhausted). A list comprehension is the wrong choice when the sequence is very large and you only need a single pass — you'd be paying for memory you don't need.
+
+**Q — Interview (mid):** "Explain, precisely, why `iter([1,2,3])` called twice gives you two independent iterators, but calling `next()` twice on the same iterator object does not reset."
+**A:** `iter(some_list)` calls `some_list.__iter__()`, which explicitly constructs and returns a brand-new iterator object each time it's called — the list itself holds no iteration-position state; it's iterable, not itself an iterator. So two separate `iter()` calls on the same list genuinely produce two independent objects, each tracking its own position. `next()`, by contrast, is called *on a specific iterator object* — it advances that object's own internal position and has no mechanism to "reset," since nothing in the iterator protocol defines a rewind operation; once an iterator is created, its position only ever moves forward.
+
+**Q — Interview (senior):** "Design a lazy ETL pipeline — read, filter, transform, write — using only generators chained together. Explain what happens to memory usage as the pipeline runs, and where you'd deliberately break laziness."
+**A:**
+```python
+def read_records(path):
+    for line in open(path):
+        yield parse(line)
+
+def filter_valid(records):
+    for r in records:
+        if is_valid(r):
+            yield r
+
+def transform(records):
+    for r in records:
+        yield apply_transform(r)
+
+for record in transform(filter_valid(read_records(path))):
+    write(record)
+```
+Memory stays roughly constant throughout — at any given moment, only a small number of records (one per stage, roughly) are actually "in flight," since each stage pulls from the previous one only as the final `for` loop demands the next value. Laziness should be deliberately broken only where an operation genuinely requires the full dataset at once — for example, if a later requirement needed the records sorted by some field, `sorted()` would need to materialize the entire sequence in memory at that specific point, which should be an isolated, intentional exception rather than something that silently happens throughout the pipeline.
+
+**Q — Advanced:** "Explain what `yield from` propagates that a plain `for x in sub: yield x` loop does not, and connect this to how you'd expect `await` to behave for a coroutine that awaits another coroutine."
+**A:** `yield from sub_generator` correctly forwards `.send()` and `.throw()` calls made on the *outer* generator down into the sub-generator, and it propagates the sub-generator's eventual `return` value as the result of the `yield from` expression itself. A manual `for x in sub: yield x` loop does neither — it only forwards the yielded values, with no channel back down for sent values/exceptions and no way to capture a return value at all. This maps directly onto `await`: when a coroutine awaits another coroutine, values/exceptions and the final return value are expected to propagate correctly through that chain of awaits, exactly the same shape as `yield from` delegating into a sub-generator — which is architecturally close to how `await` is actually implemented under the hood.
 
 ---
 

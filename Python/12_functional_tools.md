@@ -139,6 +139,8 @@ Genuinely useful for adapting a general function to a specific callback signatur
 
 ## 11.5 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:**
 ```python
 from itertools import groupby
@@ -158,6 +160,73 @@ for key, group in groupby(data):
 **Interview — senior:** "Design a data pipeline that reads a huge lazy stream of user events, groups them by user ID, and computes a rolling aggregate per user — using `itertools` tools where they genuinely help, and explaining precisely where you'd need to deviate from pure laziness (e.g., because grouping by non-consecutive keys requires either sorting or a non-lazy dict-based approach)."
 
 **Advanced / FAANG-style:** "Implement your own simplified version of `itertools.chain` and `itertools.islice` as generator functions, without using the `itertools` module, and explain why each is lazy — what would break if you implemented them eagerly instead (e.g., using them on an infinite `itertools.count()` source)."
+
+---
+
+## 11.6 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+from itertools import groupby
+data = [1, 1, 2, 2, 1, 1]
+for key, group in groupby(data):
+    print(key, list(group))
+```
+**A:**
+```
+1 [1, 1]
+2 [2, 2]
+1 [1, 1]
+```
+`groupby` (with no `key` function, grouping by element equality directly) only merges **consecutive** matching runs — the two separate stretches of `1`s at the start and end of the list are not combined into one group, since a `2, 2` run sits between them.
+
+**Q — Core:** Use `itertools.combinations` to find all pairs summing to a target value, and compare its clarity/complexity to a hand-rolled nested loop.
+**A:**
+```python
+from itertools import combinations
+pairs = [(a, b) for a, b in combinations(nums, 2) if a + b == target]
+```
+Complexity is roughly equivalent to a nested loop — both are O(n²) in the naive case — but `combinations` already guarantees each unordered pair exactly once, without needing an explicit `j > i` index guard to avoid both duplicate pairs and pairing an element with itself, which a hand-rolled nested loop has to get right manually.
+
+**Q — Debugging:** A developer expects `itertools.groupby(data, key=lambda x: x["category"])` to produce one group per unique category, but gets many fragmented groups. Diagnose and fix.
+**A:** The data wasn't sorted by `category` before calling `groupby` — since `groupby` only merges *consecutive* matching keys, any interleaving of categories in the original order produces a separate group each time the category changes and later reappears. Fix: `sorted(data, key=lambda x: x["category"])` immediately before the `groupby` call.
+
+**Q — Interview (junior):** "What's the difference between `itertools.permutations([1,2,3], 2)` and `itertools.combinations([1,2,3], 2)`? Give the actual output of each."
+**A:** `permutations` cares about order and produces every ordered pairing with no repeated elements: `[(1,2), (1,3), (2,1), (2,3), (3,1), (3,2)]` — 6 results. `combinations` ignores order, producing each unordered pairing exactly once: `[(1,2), (1,3), (2,3)]` — 3 results, exactly half, since each `combinations` pair corresponds to two `permutations` orderings.
+
+**Q — Interview (mid):** "You have a slow, purely recursive function with overlapping subproblems (like naive Fibonacci). Speed it up with a one-line change, and explain why it works and what constraint it places on the function's arguments."
+**A:**
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=None)
+def fib(n):
+    if n < 2: return n
+    return fib(n - 1) + fib(n - 2)
+```
+Works because it memoizes each unique argument's result — the overlapping subproblems in naive recursive Fibonacci (e.g. `fib(3)` gets recomputed many times as a subcall of larger `fib(n)` calls) are computed once and reused thereafter, turning exponential time into linear. Constraint: all arguments must be hashable, since they're used as dict keys internally — a function taking a `list` argument couldn't be decorated this way without first converting it to something hashable.
+
+**Q — Interview (senior):** Design a lazy ETL pipeline that groups a live event stream by user ID and computes a rolling aggregate — using `itertools` where it genuinely helps, and explaining where you'd deviate from pure laziness.
+**A:** `itertools.groupby` genuinely helps only if events for a given user arrive consecutively in the stream, which a live, interleaved multi-user event stream almost never guarantees. The realistic design uses a `defaultdict` (or a dedicated streaming-aggregation structure) keyed by user ID, updated incrementally as each event arrives — deviating from pure `itertools` laziness specifically because grouping by non-consecutive keys in an unsorted, unbounded live stream structurally requires either buffering/sorting (impossible for a genuinely unbounded live stream) or a dict-based accumulator that holds per-user running state instead.
+
+**Q — Advanced:** Implement your own `chain` and `islice` as generator functions and explain why each is lazy.
+**A:**
+```python
+def my_chain(*iterables):
+    for it in iterables:
+        yield from it
+
+def my_islice(iterable, stop):
+    it = iter(iterable)
+    for _ in range(stop):
+        try:
+            yield next(it)
+        except StopIteration:
+            return          # source ran out early — just stop, like real islice
+```
+The `try`/`except StopIteration: return` matters: a bare `next(it)` that raises inside a generator would surface as a `RuntimeError` under PEP 479 (Python 3.7+), not a clean stop. Both functions are lazy because they only pull the next value from their source via `next()`/`yield from` exactly when their own consumer asks for the next value — no upfront materialization happens. An eager version (e.g., building a full list first) would hang forever if given an infinite source like `itertools.count()`, since there's no finite point at which building that eager intermediate list would ever complete.
 
 ---
 

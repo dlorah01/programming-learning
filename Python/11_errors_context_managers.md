@@ -216,6 +216,8 @@ Added specifically to support scenarios where multiple independent operations ca
 
 ## 10.7 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:**
 ```python
 def f():
@@ -240,6 +242,103 @@ print(f())
 **Interview — senior:** "Write a `@contextmanager`-based context manager that acquires a database connection, ensures it's released even on exception, and — separately — decide and justify whether it should suppress exceptions raised inside the `with` block or let them propagate."
 
 **Advanced / FAANG-style:** "Design error handling for a batch job that processes 10,000 independent records, where some records may fail validation. Compare: (a) letting the first failure abort the whole batch, (b) catching and logging per-record failures while continuing, and (c) using exception groups to fail the whole batch loudly at the end while still processing everything. Discuss the tradeoffs and which you'd choose for a nightly batch vs. a user-facing synchronous request."
+
+---
+
+## 10.8 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+def f():
+    try:
+        raise ValueError("oops")
+    except ValueError:
+        return "caught"
+    finally:
+        print("finally ran")
+
+print(f())
+```
+**A:**
+```
+finally ran
+caught
+```
+The `except` clause catches the exception and queues `"caught"` as the return value — but before the function actually returns, `finally` always runs, printing `"finally ran"` first. Only after that does the function genuinely return `"caught"`, which the outer `print(f())` then prints.
+
+**Q — Core:** Design a small exception hierarchy for a payment-processing module and write a caller that handles one subclass specifically while letting others propagate to a generic handler.
+**A:**
+```python
+class PaymentError(Exception):
+    pass
+class InsufficientFundsError(PaymentError):
+    pass
+class CardDeclinedError(PaymentError):
+    pass
+
+try:
+    process_payment(order)
+except InsufficientFundsError as e:
+    prompt_for_different_payment_method(e)
+except PaymentError as e:
+    log_and_show_generic_payment_failure(e)
+```
+
+**Q — Debugging:** A codebase has `except Exception: pass` scattered through a data pipeline, and a silent data-corruption bug has gone undetected for weeks. Explain why, and rewrite it to fail loudly while allowing genuinely recoverable cases to continue.
+**A:** `except Exception: pass` discards *any* exception without a trace — including ones signaling genuinely bad, corrupting data — so the pipeline keeps running on bad input with zero log entry, zero traceback, and zero signal at the moment of failure, making the bug both structurally possible (nothing stops corrupted records from silently proceeding) and extremely hard to diagnose after the fact (there's no record of what actually went wrong or when). Rewrite:
+```python
+try:
+    process(record)
+except KnownRecoverableError as e:
+    logger.warning("skipping record %s: %s", record.id, e)
+    continue
+except Exception:
+    logger.exception("unexpected failure processing record %s", record.id)
+    raise
+```
+Only genuinely recoverable, specifically-named exception types are caught and logged before continuing; anything unexpected is logged with full traceback context and re-raised rather than silently absorbed.
+
+**Q — Interview (junior):** "What's the difference between `except Exception:` and a bare `except:`? Which should you almost always prefer?"
+**A:** `except Exception:` catches ordinary application-level errors while deliberately excluding `SystemExit`, `KeyboardInterrupt`, and `GeneratorExit` (which inherit from `BaseException`, not `Exception`, specifically so broad exception handlers don't accidentally swallow them). A bare `except:` is exactly equivalent to `except BaseException:` and catches everything, including those — almost always wrong, since it can silently absorb a deliberate `sys.exit()` call or a user's Ctrl-C. Prefer `except Exception:` essentially always.
+
+**Q — Interview (mid):** "Explain what the `else` clause of a `try` statement is for, and rewrite a `try` block that puts success-path logic inside `try` to use `else` correctly."
+**A:** `else` runs only if the `try` block raised nothing — its purpose is keeping success-path logic out of `try`, so it can't accidentally be caught by an `except` clause meant only for the specific risky operation. Before:
+```python
+try:
+    f = open(path)
+    data = f.read()      # a failure here would be wrongly caught by FileNotFoundError below
+except FileNotFoundError:
+    data = None
+```
+After:
+```python
+try:
+    f = open(path)
+except FileNotFoundError:
+    data = None
+else:
+    data = f.read()      # now correctly outside the except's reach
+```
+
+**Q — Interview (senior):** Write a `@contextmanager`-based context manager that acquires a DB connection and ensures release even on exception — decide whether it should suppress exceptions raised inside `with`.
+**A:**
+```python
+from contextlib import contextmanager
+
+@contextmanager
+def get_connection(pool):
+    conn = pool.acquire()
+    try:
+        yield conn
+    finally:
+        pool.release(conn)
+```
+It should **not** suppress exceptions — a real database error (or any other exception) raised inside the `with` block signals a genuine failure the caller needs to know about; silently swallowing it would hide real bugs from callers who reasonably expect exceptions to propagate normally. The `finally` guarantees the connection is released regardless of whether the block succeeded or raised, without needing to interfere with the exception itself.
+
+**Q — Advanced:** Compare aborting the whole batch on first failure, catching-and-logging per-record, and using exception groups to fail loudly at the end — for a nightly batch vs. a user-facing synchronous request.
+**A:** Abort-on-first-failure is simplest but means one bad record among 10,000 blocks all 9,999 good ones — reasonable only for small, correctness-critical batches where partial completion would itself be dangerous. Catch-and-log-per-record maximizes throughput and is the standard choice for large, tolerant nightly batch jobs, where partial success is fine and failures can be reviewed from logs afterward without blocking the whole run. Exception groups make the batch *look* atomic to the caller — it fails loudly, all at once, with complete detail on every failure — while still having processed everything internally; this fits a user-facing synchronous request better than a nightly job, since the caller needs one clear pass/fail signal with full diagnostic detail immediately, rather than (b)'s pattern of ongoing log entries reviewed later. For a nightly batch: catch-and-log-per-record. For a user-facing synchronous request: exception groups (or, for stricter correctness requirements, abort-on-first-failure).
 
 ---
 

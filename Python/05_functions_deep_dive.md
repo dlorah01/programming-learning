@@ -182,6 +182,8 @@ def depth_iterative(root):
 
 ## 4.7 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict the output:**
 ```python
 def f(a, b=[], *args, c, **kwargs):
@@ -203,6 +205,65 @@ print(f(3, c=4))     # does this share state with the call above? why?
 **Interview — senior:** "Why does CPython impose a recursion limit instead of supporting proper tail-call optimization, and what design value does that trade off against? Given a function that recurses over user-supplied JSON of unknown depth, how would you make it production-safe?"
 
 **Advanced / FAANG-style:** "Implement a generic `retry(func, *args, retries=3, **kwargs)` wrapper that calls `func(*args, **kwargs)`, retrying on exception up to `retries` times, and explain why the `*args, **kwargs` forwarding pattern is what makes this genuinely generic across arbitrary wrapped functions — and what its limits are (e.g., how would a caller know which underlying exceptions are worth retrying vs. not)." (Direct bridge into Module 5's decorators, which formalize exactly this pattern.)
+
+---
+
+## 4.8 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict the output:**
+```python
+def f(a, b=[], *args, c, **kwargs):
+    b.append(a)
+    return b, args, c, kwargs
+
+print(f(1, c=2))
+print(f(3, c=4))
+```
+**A:** `([1], (), 2, {})`, then `([1, 3], (), 4, {})`. Both calls omit `b`, so both use the same shared default list object — the second call's `b.append(3)` appends onto the list already holding `[1]` from the first call.
+
+**Q — Core:** Write a function `make_request(url, /, *, method="GET", **headers)` and demonstrate three legal call sites and two calls that raise `TypeError`, explaining each error precisely.
+**A:**
+Legal: `make_request("http://x")` (positional `url`, defaults used); `make_request("http://x", method="POST")`; `make_request("http://x", method="POST", Authorization="Bearer x")` (extra keyword goes into `**headers`).
+Illegal: `make_request(url="http://x")` → `TypeError`, because `url` sits before the `/` marker, making it positional-only — it can never be supplied by keyword. `make_request("http://x", "POST")` → `TypeError`, because `method` sits after the bare `*`, making it keyword-only — it can never be supplied positionally, even though it visually "looks like" the second argument.
+
+**Q — Debugging:** A teammate's function signature is `def process(data, options={}):` and users report that options set by one caller "leak" into calls made by a completely unrelated caller elsewhere in the codebase. Diagnose and fix.
+**A:** Same mechanism as Module 1's mutable-default bug: `options={}` creates one dict object, once, at `def` time, shared and potentially mutated across every call that doesn't pass its own `options`. Fix: `def process(data, options=None): if options is None: options = {}`.
+
+**Q — Interview (junior):** "What's the difference between `*args` and `**kwargs`? Write a function that accepts both and forwards them to another function unchanged."
+**A:** `*args` collects extra positional arguments into a `tuple`; `**kwargs` collects extra keyword arguments into a `dict`.
+```python
+def forward(target, *args, **kwargs):
+    return target(*args, **kwargs)
+```
+
+**Q — Interview (mid):** "Design a function signature for a `create_widget` API that (a) requires `name` to always be passed as `name=...` for clarity at call sites, and (b) never allows a caller to accidentally pass a stray extra positional argument that gets silently absorbed. Use `/`, `*`, and explain your choices."
+**A:**
+```python
+def create_widget(*, name, color="blue", size=1):
+    ...
+```
+The bare `*` makes every parameter keyword-only, satisfying (a) directly — `name` must be written as `name=...` at every call site. Because there are no positional parameters at all here, there's no `*args` catch-all either, so any stray positional argument a caller mistakenly supplies (`create_widget("red")`) raises `TypeError` immediately rather than being silently absorbed — satisfying (b).
+
+**Q — Interview (senior):** "Why does CPython impose a recursion limit instead of supporting proper tail-call optimization, and what design value does that trade off against? Given a function that recurses over user-supplied JSON of unknown depth, how would you make it production-safe?"
+**A:** No TCO because it would make crash tracebacks harder to read — an optimized-away stack frame vanishes, erasing the call chain that would otherwise show how a deep failure was actually reached, which conflicts with Python's stated preference for explicitness/readability over this specific performance capability. Production-safe fix for unknown-depth recursion over untrusted input: convert to an iterative traversal using an explicit stack (a Python list acting as a stack) rather than the call stack, which has no depth limit tied to `sys.getrecursionlimit()` and can't trigger a `RecursionError` (or, in worse cases, a real C-level stack overflow if the limit is raised carelessly).
+
+**Q — Advanced:** "Implement a generic `retry(func, *args, retries=3, **kwargs)` wrapper that calls `func(*args, **kwargs)`, retrying on exception up to `retries` times, and explain why the `*args, **kwargs` forwarding pattern makes this generic — and what its limits are."
+**A:**
+```python
+def retry(func, *args, retries=3, **kwargs):
+    last_exc = None
+    for _ in range(retries):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            last_exc = e
+    raise last_exc
+```
+Note the counting convention: `for _ in range(retries)` makes `retries` the total number of *attempts* (so `retries=3` calls `func` at most 3 times). If you want "one initial try plus N retries" instead, loop over `range(retries + 1)`.
+
+It's generic because `*args, **kwargs` transparently forwards whatever arguments the caller actually supplies, regardless of `func`'s specific signature — `retry` never needs to know or care what `func` expects. Its real limit: it can't distinguish exceptions worth retrying (e.g. a transient `ConnectionError`) from ones that will simply fail identically every time (e.g. a `ValueError` from malformed input) — a caller would need to pass an explicit exception type or predicate to retry selectively, otherwise every retry attempt is wasted on a guaranteed-to-fail-again call.
 
 ---
 

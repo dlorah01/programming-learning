@@ -103,6 +103,8 @@ A representative, realistic CI pipeline for a Python service, run on every pull 
 
 ## 18.6 Exercises
 
+> **Run a snippet locally.** Copy any code block below and feed it straight to Python from your clipboard — on macOS: `pbpaste | python3 -` — or run `python3 -`, paste, and press Ctrl-D. Predict the output first, *then* run it. A few snippets reference a helper you're asked to write, or leave an input undefined — save those to a scratch file (`python3 scratch.py`) and fill in the blank first.
+
 **Predict/reason:** Given `logger.debug(f"user data: {expensive_serialize(user)}")` running in a production service configured at `INFO` level, what actually happens at runtime, and what would change if written as `logger.debug("user data: %s", expensive_serialize(user))` instead? (Trick: does the lazy form avoid calling `expensive_serialize` too, or only avoid the *formatting*? Reason carefully.)
 
 **Core:** Set up a `pyproject.toml` for a small package with `pytest`, `ruff`, and `mypy` as dev dependencies, and write the three corresponding CI-equivalent commands you'd run locally before pushing.
@@ -116,6 +118,42 @@ A representative, realistic CI pipeline for a Python service, run on every pull 
 **Interview — senior:** "Design a CI pipeline for a Python microservice from scratch — the specific stages, their order, and why that order — and explain the `src/`-layout packaging pitfall you'd guard against."
 
 **Advanced / FAANG-style:** "A production incident traces back to a silently swallowed exception in a background worker (connecting back to Module 10's `except Exception: pass` anti-pattern) that was never logged. Redesign the worker's error handling and logging strategy so a similar incident would be immediately visible in production monitoring, referencing specific logging levels and what `exc_info=True` buys you."
+
+---
+
+## 18.7 Exercise Solutions
+
+Try each exercise cold first, then check your reasoning here. Keep a short personal note on anything you got wrong — that running log is the highest-value review material as the course goes on.
+
+**Q — Predict/reason:** Given `logger.debug(f"user data: {expensive_serialize(user)}")` running at `INFO` level in production, what actually happens? What would change with `logger.debug("user data: %s", expensive_serialize(user))` instead? Does the lazy form avoid calling `expensive_serialize` too, or only avoid the formatting?
+**A:** Neither form avoids the call to `expensive_serialize(user)`. In both cases, `expensive_serialize(user)` is a plain Python function call being evaluated as part of building the arguments passed *into* `logger.debug(...)` — Python must evaluate all arguments before the function call actually happens, regardless of what that function does with them afterward or whether it decides to do anything with the result. The genuine laziness `logging`'s `%s`-style form provides is narrower than it's often assumed to be: it avoids performing the *string interpolation/formatting step* (substituting the `%s` placeholder with the argument's string representation) when the log level is disabled — it does not, and structurally cannot, avoid evaluating whatever expression was used to produce the argument in the first place, since that evaluation happens before `logger.debug` is even called. To genuinely avoid the expensive `expensive_serialize(user)` call itself when DEBUG is disabled, you need an explicit guard: `if logger.isEnabledFor(logging.DEBUG): logger.debug("user data: %s", expensive_serialize(user))`.
+
+**Q — Core:** Set up a `pyproject.toml` for a small package with `pytest`, `ruff`, and `mypy` as dev dependencies, and the corresponding local CI-equivalent commands.
+**A:**
+```toml
+[project]
+name = "mypackage"
+version = "0.1.0"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.5", "mypy>=1.10"]
+```
+Local commands: `ruff check .` (lint), `ruff format --check .` (format check), `mypy .` (type check), `pytest` (tests).
+
+**Q — Debugging:** Tests pass locally for every developer, but fail with an `ImportError` immediately after the package is released and installed by a user, for a module that clearly exists in the repo. Diagnose and fix.
+**A:** Likely cause: the project isn't using a `src/` layout, so local test runs have been passing via an accidental current-working-directory-based import path that happened to work throughout development but doesn't reflect what actually ends up in the built, installed distribution — a file or `__init__.py` entry may genuinely be missing from the package due to a `pyproject.toml` package-discovery misconfiguration, and this was never caught locally because local test runs never actually went through a real install step. Fix: adopt a `src/` layout, so tests can only succeed by importing the genuinely *installed* package (`pip install -e .`), which surfaces this exact class of packaging bug during normal local development rather than only after a release ships.
+
+**Q — Interview (junior):** "Why is `print()` considered bad practice in production Python code? What would you use instead, and what does it give you that `print()` doesn't?"
+**A:** `print()` always fires unconditionally to stdout, with no concept of severity and no built-in way to redirect, filter, or structure its output without hand-rolling everything `logging` already provides. `logging` gives you severity levels (independently filterable per deployment environment without any code change), multiple simultaneous output destinations (stdout, a file, a remote log aggregator, all at once, independently configured), and consistent, structured formatting (timestamps, module name, severity) automatically attached to every entry.
+
+**Q — Interview (mid):** "Explain the difference between a linter and a formatter, using `Ruff` and `Black`/`Ruff`'s formatter mode as examples. Why are both typically CI-enforced?"
+**A:** A linter (`Ruff`, in its linting role) analyzes code for likely bugs, anti-patterns, and style violations, flagging issues without necessarily rewriting the code itself. A formatter (`Black`, or `Ruff`'s own formatter mode) deterministically rewrites code into one canonical style, with essentially no configuration knobs, specifically to end style debates entirely rather than adjudicate them. Both are typically CI-enforced because manual human review of style/lint issues wastes reviewer time and attention on things a tool can catch automatically, consistently, and instantly — the identical reasoning that makes ESLint/Prettier CI-enforced gates on any serious JS/TS codebase.
+
+**Q — Interview (senior):** Design a CI pipeline for a Python microservice from scratch — stages, order, and reasoning — and explain the `src/`-layout pitfall to guard against.
+**A:** A reasonable stage order: (1) install dependencies from a lockfile, for reproducibility; (2) lint (`ruff check .`); (3) format check (`ruff format --check .`); (4) type check (`mypy .`/`pyright`); (5) test (`pytest --cov`); (6) build (package/Docker image); (7) deploy, gated on all of the above passing on merge to main. Ordering reasoning: cheapest, fastest checks run first, so a trivial style violation fails in seconds rather than only after a multi-minute test suite finishes — fast feedback for the common case. `src/`-layout pitfall: ensure the test stage genuinely installs the package (rather than relying on an accidental current-working-directory-based import) so packaging misconfigurations are caught here, in CI, before a release — never after a user hits an `ImportError` post-install.
+
+**Q — Advanced:** A production incident traces back to a silently swallowed exception in a background worker, never logged. Redesign the worker's error handling and logging strategy.
+**A:** Replace any bare `except Exception: pass` with a handler that at minimum calls `logger.error("...", exc_info=True)` (or `logger.exception(...)`, which does the same thing implicitly), capturing the full traceback rather than discarding it silently. Distinguish genuinely recoverable failures (log at an appropriate level and continue, or route the failed item to a dead-letter queue for later inspection) from unexpected ones (log with full detail and consider re-raising or triggering an alert, since an unexpected exception may indicate a real, ongoing problem worth immediate attention). Critically, ensure the logging configuration actually ships this output to wherever the team's production monitoring/alerting reads from — a log line written only to a local file nobody watches provides no real incident visibility, regardless of how well-formed the log message is. `exc_info=True` specifically attaches the currently-handled exception's traceback to the log record, so the resulting log entry shows exactly where and why the failure occurred, not merely that something, unspecified, failed.
 
 ---
 
