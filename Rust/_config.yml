@@ -1,0 +1,4 @@
+title: Rust Mastery Course
+description: A lesson-by-lesson Rust course — foundations, ownership and lifetimes, traits, concurrency and async, unsafe and systems programming, performance, and blockchain infrastructure.
+theme: jekyll-theme-cayman
+markdown: kramdown
