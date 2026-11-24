@@ -2,6 +2,7 @@
 layout: default
 title: "Lesson 47 — Deployment and WebAssembly"
 ---
+{% raw %}
 
 # Lesson 47 — Deployment and WebAssembly
 
@@ -2709,3 +2710,4 @@ What the table does not show: it tests *these* 58 edits, not every possible bug;
 - `wasmi` documentation: <https://docs.rs/wasmi>
 
 The URLs above are the standard documentation locations; I did not open them during this session (the sandbox cannot reach the documentation sites), so if a link has moved, search for the page title. **Unchecked or from memory:** Cargo's own default value for `strip` in release builds; that `wasm-opt` commonly reduces module size further; that static glibc has limitations for name lookups and `dlopen`, and that `musl` is the common alternative; the Docker default stop timeout of 10 s; shell-form `ENTRYPOINT` and signal forwarding; that `scratch` images lack CA certificates and time-zone data; multi-stage Docker builds; the behavior of systemd directives (`Restart`, `RestartPreventExitStatus`, `TimeoutStopSec`, sandboxing options), since the unit was only syntax-checked; everything about Kubernetes probes, termination and rolling updates; what a signal handler may safely do; `cross` and `cargo-zigbuild`; what `wasm32-wasip2` and the component model are; that interpreters are slower than compiling runtimes; that Node's WASI is not a hardened security boundary; that unsafe memory bugs inside a wasm module can be exploitable within it; what `wasm-bindgen-test` does; zero-downtime rollout details in exercise 7; and CI practice. **Environment caveats:** the wasm32 standard library was built locally from source with unstable-feature flags because `rustup` could not download it, `wasi-libc` objects came from `wasi-sdk 27`, and Docker ran with a manually started daemon, `vfs` storage and host networking, so sizes and container timings may differ from yours. Measurements marked ✓ are single runs (or ranges of five runs) on one shared virtual machine; the timings of the two loops in §6.11 say nothing about other workloads. The code blocks in exercises 3, 4 and 5 and in the debugging challenge's original and fixed sieve were compiled and run (the exercise 5 module on `wasm32-unknown-unknown` in Node 22); the container, signal, drain, reproducibility, profile, wasm size, Node, `wasmi`, `wasm-bindgen` and WASI results marked ✓ were observed with `rustc 1.97.0`, `signal-hook 0.3.18`, `wasmi 0.51.5`, `wasm-bindgen-cli 0.2.130`, Node 22.22.0 and Docker 29.8.2.
+{% endraw %}

@@ -2,6 +2,7 @@
 layout: default
 title: "Lesson 09 — Memory layout: size, alignment, padding, niches, and repr"
 ---
+{% raw %}
 
 # Lesson 09 — Memory layout: size, alignment, padding, niches, and `repr`
 
@@ -804,3 +805,4 @@ mod tests {
 - *Clippy lint list*, `large_enum_variant`: <https://rust-lang.github.io/rust-clippy/master/index.html#large_enum_variant>
 
 The URLs above are the standard documentation locations; I did not open every one during this session, so if a link has moved, search the docs site for the page title.
+{% endraw %}

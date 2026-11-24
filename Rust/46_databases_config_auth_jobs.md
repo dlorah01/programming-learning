@@ -2,6 +2,7 @@
 layout: default
 title: "Lesson 46 — Databases, configuration, authentication, background jobs"
 ---
+{% raw %}
 
 # Lesson 46 — Databases, configuration, authentication, background jobs
 
@@ -3369,3 +3370,4 @@ What the table does not show: it tests *these* 57 edits, not every possible bug;
 - The Twelve-Factor App, "Config": <https://12factor.net/config>
 
 The URLs above are the standard documentation locations; I did not open them during this session (the sandbox cannot reach the documentation sites), so if a link has moved, search for the page title. Unchecked or from memory: the SQLite versus client/server comparison; `sqlx`, `diesel` and `tokio-postgres` as alternatives; what `synchronous = FULL`, `NORMAL` and `OFF` guarantee after a power failure; the rusqlite default busy timeout of five seconds; that other databases do not roll back schema changes; that WAL's reader/writer advantages show at commit time (my reader test showed no difference before commit); OWASP's minimum Argon2 parameters; that Linux exposes a process's environment in `/proc/<pid>/environ` to the same user and root; that a fast hash is the right tool for high-entropy tokens; the rehash-on-login procedure; heartbeat leases; jitter; `panic = "abort"` defeating `catch_unwind`; polling versus notification for queues; PostgreSQL's `now()` for shared time; and everything about cookies, CSRF, JWT, OAuth, MFA, rate limiting and network file systems. The measurements marked ✓ come from one shared virtual machine: the benchmark program is a release build, the tests are dev builds, medians and ranges are from three runs (nine logins per median), and the `fsync` costs reflect this virtual disk only. Exercise answers 1, 6, 7 and 8 are reasoning from memory; the code blocks in answers 3, 4 and 5 and in the debugging challenge were compiled and run; the SQL injection outputs, error texts, timings, the migration, lease, fencing and concurrency behaviors marked ✓ were observed with `rustc 1.97.0`, SQLite 3.54.1, `rusqlite 0.41.1`, `argon2 0.6.0` and `toml 1.2.1`.
+{% endraw %}

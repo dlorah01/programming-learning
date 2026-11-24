@@ -2,6 +2,7 @@
 layout: default
 title: "Lesson 34 — Declarative macros and hygiene"
 ---
+{% raw %}
 
 # Lesson 34 — Declarative macros and hygiene
 
@@ -1256,3 +1257,4 @@ My first M9 was invalid: I tried to empty `ALL` with a slice index in a `const` 
 - `cargo expand` (external tool): <https://github.com/dtolnay/cargo-expand>
 
 The URLs above are the standard documentation locations; I did not open them during this session (the sandbox cannot reach them), so if a link has moved, search the site for the page title. Unchecked or from memory: the complete follow-set table; the exact fragment-specifier list and edition differences (`expr` vs `expr_2021`, `pat` vs `pat_param`, which of `ident`/`lifetime`/`tt` stay transparent besides the ✓ cases above); that `_` is not an `ident`; the default recursion limit of 128; the term "mixed-site hygiene"; `#[macro_use]` semantics; that `#[macro_export]` always places the macro at the crate root; that tt-munchers are quadratic; `-Z macro-backtrace`, `-Zunpretty=expanded`, `trace_macros!` and `cargo expand` (nightly or not installed, not run); compile-time cost of macro expansion (not measured); and the API-guidelines macro chapter's contents. Everything marked ✓ was run on this machine's `rustc 1.97.0`.
+{% endraw %}

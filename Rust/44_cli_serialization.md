@@ -2,6 +2,7 @@
 layout: default
 title: "Lesson 44 — CLI tools and serialization"
 ---
+{% raw %}
 
 # Lesson 44 — CLI tools and serialization
 
@@ -1913,3 +1914,4 @@ The lesson of R17: my first suite tested a writer that fails *during* writes but
 - `std::process::ExitCode`: <https://doc.rust-lang.org/std/process/struct.ExitCode.html>
 
 The URLs above are the standard documentation locations; I did not open them during this session (the sandbox cannot reach the documentation sites), so if a link has moved, search for the page title. Unchecked or from memory: that Rust sets `SIGPIPE` to ignore at start-up (the observable behavior, `BrokenPipe` and the panic, is ✓); that stdout is line-buffered (I did not test it); command-line visibility of arguments in `ps` and `/proc`, and what shell history stores; environment-variable inheritance and exposure claims in exercise 8; `pico-args`, `lexopt` and `argh` as alternatives and their sizes (not run); that other languages (JavaScript, for one) store JSON numbers as 64-bit floats; CSV formula injection; the `indexmap`-based order-preserving feature and the feature flag that disables the recursion limit; Windows and macOS behavior of anything here; and the idea that `Cli::parse()` exits the process (I used `try_parse_from` throughout). The measurements marked ✓ are from one shared virtual machine: timings are the minimum (or minimum and median) of 7 runs per command with the input in the page cache, peak memory is the resident set size reported by the operating system's `wait4` accounting, and binary sizes are for this toolchain and these dependency versions. Exercise answers 1, 5 and 8 are reasoning from memory; the code blocks in answers 3 and 4 and in the debugging challenge were compiled and run (the challenge's four behaviors by running the program). Everything marked ✓ was run on this machine's `rustc 1.97.0` with `clap 4.6.7`, `serde 1.0.229` and `serde_json 1.0.154`.
+{% endraw %}

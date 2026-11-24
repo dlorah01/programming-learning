@@ -2,6 +2,7 @@
 layout: default
 title: "Lesson 51 — RPC, nodes, indexers, transaction monitoring, serialization"
 ---
+{% raw %}
 
 # Lesson 51 — RPC, nodes, indexers, transaction monitoring, serialization
 
@@ -2375,7 +2376,6 @@ impl Watcher {
 
 ### `tests/ser.rs`
 
-{% raw %}
 ```rust
 use rpclab::ser::*;
 use serde::{Deserialize, Serialize};
@@ -2543,11 +2543,9 @@ fn large_integers_do_not_survive_a_double() {
     assert_eq!(back.n, big);
 }
 ```
-{% endraw %}
 
 ### `tests/jsonrpc.rs`
 
-{% raw %}
 ```rust
 use rpclab::jsonrpc::*;
 use serde_json::{Value, json};
@@ -2957,7 +2955,6 @@ fn the_default_limits_are_pinned_to_literal_numbers() {
     );
 }
 ```
-{% endraw %}
 
 ### `tests/chain.rs`
 
@@ -4732,3 +4729,4 @@ What the table does not show: it tests *these* edits, not every possible bug; th
 - Documentation of the JSON-RPC interfaces of specific blockchain nodes and providers (not consulted; check the one you use for method names, error codes and limits).
 
 The URLs and titles above are the standard locations; I did not open them during this session (the sandbox cannot reach the documentation or standards sites), so if a link has moved, search for the title. **Unchecked or from memory:** the text of the JSON-RPC 2.0 specification (the crate implements and tests the rules I recall, including the reserved error codes and the batch rules, but I did not compare them with the specification); the claims that real chains and providers use hex or decimal strings for large integers, lag behind, prune history, rate-limit, use the `-32000..-32099` range for operational errors, drop or replace pending transactions, reject duplicate transactions as "already known" and allow replacement with the same nonce; that some chains have documented practical reorg depths; the "full jitter" analysis in the AWS blog post; the `serde_json` recursion limit; and everything about the finality models of specific networks. **Environment caveats:** timings are single-machine micro-measurements (medians of five runs, three separate runs of one example) on a shared virtual machine with two cores; there are no real network calls in this lesson, so no latency or reliability figure applies to any real provider. Measurements and outcomes marked ✓ were observed with `rustc 1.97.0`, `serde 1.0.229`, `serde_json 1.0.154` and `sha2 0.11.0`. The code blocks in exercises 3, 4 and 5 and in the debugging challenge's two versions were compiled and run in a scratch crate (✓ 14 tests, repeated three times without a failure; the buggy version intentionally contains the faults described); the trace of exercise 6 was produced by a test; the mutation results are those of the table above (a test process that aborted, failed an assertion or did not finish within 150 seconds counted as detecting the mutant). **No part of this lesson makes any system secure.**
+{% endraw %}

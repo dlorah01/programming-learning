@@ -2,6 +2,7 @@
 layout: default
 title: "Lesson 48 — Hashes, signatures, key management"
 ---
+{% raw %}
 
 # Lesson 48 — Hashes, signatures, key management
 
@@ -1159,7 +1160,6 @@ pub fn extend(known_digest: &[u8; 32], unknown_len: u64, suffix: &[u8]) -> (Vec<
 
 ### `src/keys.rs`
 
-{% raw %}
 ```rust
 //! Key generation, identification and encrypted storage.
 
@@ -1461,7 +1461,6 @@ pub fn read_key_file(path: &Path) -> Result<Vec<u8>, KeyError> {
     Ok(v)
 }
 ```
-{% endraw %}
 
 ### `src/sign.rs`
 
@@ -3162,3 +3161,4 @@ What the table does not show: it tests *these* edits, not every possible bug (it
 - OWASP Password Storage Cheat Sheet: <https://cheatsheetseries.owasp.org/>
 
 The URLs above are the standard locations; I did not open them during this session (the sandbox cannot reach the documentation sites), so if a link has moved, search for the title. **Unchecked or from memory:** the descriptions of the standards (padding rule and constant derivation of SHA-256, HKDF's extract/expand, the HMAC construction, Argon2's parameters, Ed25519's properties, `verify` versus `verify_strict` semantics); that SHA-3 is a sponge unaffected by length extension and that SHA-512/256 and BLAKE3's keyed mode are alternatives; the claim that a 64-bit hash can be collided in hours; remote timing attacks being demonstrated in research; how `subtle` defends against the optimizer; what current Argon2 parameter guidance recommends (check OWASP); that Poly1305-based AEADs can expose their authentication key on nonce reuse; that Ed25519 is broken by large quantum computers; everything in §12 about KMS, HSMs, revocation and rotation practice; the limits of `zeroize` (swap, dumps, registers); the Unix permission semantics of `0o600`; the nonce-collision probability formula (derived from the birthday approximation and ✓ evaluated, not independently simulated). **Environment caveats:** timings are single-machine micro-measurements from three runs of an example on a shared virtual machine; test vectors were cross-checked with Python's `hashlib`, `hmac`, `blake3` and `cryptography` packages; the library versions are those recorded in `Cargo.lock` on 2026-11-10. Measurements and outcomes marked ✓ were observed with `rustc 1.97.0`. The code blocks in exercises 3 to 6 and in the debugging challenge were compiled and run in a scratch crate (✓ 7 tests); the exercise 8 formula was evaluated by a test; the mutation results are those of the table above (the harness classified a test process as detecting a mutant when a test failed, when it aborted, or, for two mutants, when it did not finish within five minutes). **No part of this lesson makes any system secure.**
+{% endraw %}

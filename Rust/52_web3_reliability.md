@@ -2,6 +2,7 @@
 layout: default
 title: "Lesson 52 — Off-chain services, cryptographic integrations, fault tolerance"
 ---
+{% raw %}
 
 # Lesson 52 — Off-chain services, cryptographic integrations, fault tolerance
 
@@ -1473,7 +1474,6 @@ impl Rng {
 
 ### `src/sign.rs`
 
-{% raw %}
 ```rust
 //! Signing envelopes: what is signed, who may sign, how to verify, and how a
 //! verifier refuses replays, expired messages, unknown and rotated keys.
@@ -1876,7 +1876,6 @@ impl Verifier {
     }
 }
 ```
-{% endraw %}
 
 ### `src/webhook.rs`
 
@@ -4603,3 +4602,4 @@ What the table does not show: it tests *these* edits, not every possible bug; th
 - The documentation of your key-management service or hardware module, and of your database's write-ahead logging and durability settings (not consulted).
 
 The URLs and titles above are the standard locations; I did not open them during this session (the sandbox cannot reach documentation and standards sites), so if a link has moved, search for the title. **Unchecked or from memory:** the content of RFC 4231 and RFC 8032 (the two HMAC test vectors were recomputed with Python's `hmac` module and agree with the values I remember; I did not re-read the RFC); the description of strict versus ordinary Ed25519 verification in `ed25519-dalek` (the behavior I rely on, the identity key being refused by `verify_strict`, was tested, but the full list of what strict mode rejects was not enumerated; I did not check whether the ordinary check in this version accepts that test input, except through the mutation in §14); that some payment providers use a `t=…,v1=…` webhook scheme; that real chains use sequential account nonces; the descriptions of cloud key services, hardware modules, threshold signing and multi-signature accounts; the durability behavior of file systems, drives and `fsync`; `FOR UPDATE SKIP LOCKED` and managed queues; the circuit-breaker pattern as described in the literature; the claims about `secrecy`, `zeroize` and `subtle` internals; and the AWS jitter article. **Environment caveats:** timings are single-machine micro-measurements (three runs of one example) on a shared virtual machine with two cores; nothing here talks to a real network, disk-durability layer or key service, so no latency, throughput or durability figure applies to a real deployment. Measurements and outcomes marked ✓ were observed with `rustc 1.97.0`, `sha2 0.11.0`, `ed25519-dalek 3.0.0` and `hmac 0.13.0`. The code blocks in exercises 1 to 8 and in the debugging challenge's two versions were compiled and run in a scratch crate (✓ 14 tests, with `cargo clippy --all-targets -- -D warnings` clean); the mutation results are those of the table above (a test process that aborted, failed an assertion or did not finish within 200 seconds counted as detecting the mutant). **No part of this lesson makes any system secure.**
+{% endraw %}
