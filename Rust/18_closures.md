@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 18 — Closures: Fn, FnMut, FnOnce"
 ---
 

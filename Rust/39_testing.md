@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 39 — Unit tests, integration tests, and doc tests"
 ---
 

@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 53 — Solana execution model: accounts, programs, instructions, PDAs, CPI"
 ---
 

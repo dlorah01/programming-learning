@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 21 — Trait objects, static vs dynamic dispatch, and dyn compatibility"
 ---
 

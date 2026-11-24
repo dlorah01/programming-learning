@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 45 — HTTP clients and servers, APIs"
 ---
 

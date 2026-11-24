@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 10 — References and borrowing: shared, mutable, aliasing, reborrowing"
 ---
 

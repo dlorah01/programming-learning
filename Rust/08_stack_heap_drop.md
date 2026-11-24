@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 08 — Stack, heap, Drop, and RAII"
 ---
 

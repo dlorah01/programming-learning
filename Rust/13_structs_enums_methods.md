@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 13 — Structs, enums, methods, and associated functions"
 ---
 

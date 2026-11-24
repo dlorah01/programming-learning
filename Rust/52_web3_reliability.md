@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 52 — Off-chain services, cryptographic integrations, fault tolerance"
 ---
 

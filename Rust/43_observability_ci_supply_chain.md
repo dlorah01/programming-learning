@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 43 — Observability, CI, dependency security"
 ---
 

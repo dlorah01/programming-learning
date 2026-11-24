@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 55 — Program testing, deployment, upgrades, security auditing"
 ---
 

@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 58 — Cross-chain infrastructure, relayers and indexers"
 ---
 

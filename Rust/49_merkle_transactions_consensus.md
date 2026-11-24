@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 49 — Merkle trees, transaction models, consensus, trust assumptions"
 ---
 

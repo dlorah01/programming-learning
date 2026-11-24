@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 22 — GATs, Send and Sync, PhantomData, variance, and unsized types"
 ---
 

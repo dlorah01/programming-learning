@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 28 — Atomics and memory ordering"
 ---
 

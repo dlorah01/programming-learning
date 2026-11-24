@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 47 — Deployment and WebAssembly"
 ---
 

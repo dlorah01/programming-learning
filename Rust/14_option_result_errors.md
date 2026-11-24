@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 14 — Option, Result, the ? operator, and error propagation"
 ---
 

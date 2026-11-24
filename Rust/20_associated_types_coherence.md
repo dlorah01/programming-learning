@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 20 — Associated types, blanket impls, coherence, and the orphan rule"
 ---
 

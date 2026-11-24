@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 37 — MaybeUninit, FFI, repr(C), and C interoperability"
 ---
 

@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 02 — Toolchain: rustup, rustc, Cargo, Clippy, rustfmt"
 ---
 

@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 34 — Declarative macros and hygiene"
 ---
 

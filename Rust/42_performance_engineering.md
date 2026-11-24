@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 42 — Performance engineering: cache locality, SIMD, allocations, binary size"
 ---
 

@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 36 — Unsafe contracts, raw pointers, and undefined behavior"
 ---
 

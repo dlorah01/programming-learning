@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 31 — Tokio in practice"
 ---
 

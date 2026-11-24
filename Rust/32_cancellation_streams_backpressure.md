@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 32 — Cancellation, streams, and backpressure"
 ---
 

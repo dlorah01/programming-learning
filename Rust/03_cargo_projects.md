@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 03 — Cargo projects: crates, modules, dependencies, features, workspaces, profiles, CI"
 ---
 

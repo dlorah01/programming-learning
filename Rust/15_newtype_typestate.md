@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 15 — Newtypes, typestate, and state machines"
 ---
 

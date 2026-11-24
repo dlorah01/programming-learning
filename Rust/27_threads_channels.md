@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 27 — Threads, scoped threads, and channels"
 ---
 

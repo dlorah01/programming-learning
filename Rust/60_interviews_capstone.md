@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 60 — Technical interviews and capstone projects"
 ---
 

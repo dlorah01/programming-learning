@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 41 — Benchmarking and profiling"
 ---
 

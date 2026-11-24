@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 48 — Hashes, signatures, key management"
 ---
 

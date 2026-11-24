@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 07 — Ownership, moves, Copy, and Clone"
 ---
 

@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 50 — Networking and deterministic execution"
 ---
 

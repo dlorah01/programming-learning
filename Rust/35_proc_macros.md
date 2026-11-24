@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 35 — Procedural macros: derives, attributes, and function-like macros"
 ---
 

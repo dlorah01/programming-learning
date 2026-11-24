@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 06 — Strings, text and bytes, conversions, and pattern matching"
 ---
 

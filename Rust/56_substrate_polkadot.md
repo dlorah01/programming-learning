@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 56 — Substrate/Polkadot concepts and Rust clients"
 ---
 

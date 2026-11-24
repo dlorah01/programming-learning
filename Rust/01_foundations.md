@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 01 — Foundations: what Rust is and why it works this way"
 ---
 

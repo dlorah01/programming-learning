@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 40 — Property testing and fuzzing"
 ---
 

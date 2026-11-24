@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 26 — Error design: panic vs Result, custom errors, sources, anyhow, thiserror"
 ---
 

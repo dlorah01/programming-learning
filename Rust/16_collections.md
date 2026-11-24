@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 16 — Collections: Vec, VecDeque, HashMap, BTreeMap, and friends"
 ---
 

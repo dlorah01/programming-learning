@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 33 — Modules, visibility, API design, and rustdoc"
 ---
 

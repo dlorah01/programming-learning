@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 51 — RPC, nodes, indexers, transaction monitoring, serialization"
 ---
 

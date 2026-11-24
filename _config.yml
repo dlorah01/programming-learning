@@ -1,13 +1,13 @@
 # Site settings — this is the project-wide hub/landing page.
-# Each track (JavaScript/, Python/, TypeScript/) is its own independent
+# Each track (JavaScript/, Python/, TypeScript/, Rust/) is its own independent
 # Jekyll site with its own _config.yml and index.md, meant to be served
 # from inside that folder for the fullest themed experience. This root
 # config only builds the landing page at index.md, which links out to
-# all three.
+# all four.
 title: "Programming Learning"
 description: >-
-  A personal, systems-based programming mastery library. Three
-  curricula — JavaScript, Python, TypeScript — each hand-built chapter
+  A personal, systems-based programming mastery library. Four
+  curricula — JavaScript, Python, TypeScript, Rust — each hand-built chapter
   by chapter, from language internals to production and interview-level
   synthesis.
 lang: en

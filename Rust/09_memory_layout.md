@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 09 — Memory layout: size, alignment, padding, niches, and repr"
 ---
 

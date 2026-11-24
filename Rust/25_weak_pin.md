@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 25 — Weak, reference cycles, and Pin"
 ---
 

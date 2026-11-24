@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 23 — Box, Rc, and Arc: owning pointers"
 ---
 

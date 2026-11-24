@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 05 — Functions, expressions, control flow, tuples, arrays, and slices"
 ---
 

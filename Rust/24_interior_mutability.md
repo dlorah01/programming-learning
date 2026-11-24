@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 24 — Interior mutability: Cell, RefCell, Mutex, RwLock"
 ---
 

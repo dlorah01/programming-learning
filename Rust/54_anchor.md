@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 54 — Anchor, token programs, account validation"
 ---
 

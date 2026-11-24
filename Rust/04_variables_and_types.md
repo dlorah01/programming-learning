@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 04 — Variables, mutability, shadowing, primitives, and numeric behavior"
 ---
 

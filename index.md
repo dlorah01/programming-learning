@@ -35,7 +35,7 @@ Pick a track below to jump into its roadmap and chapters.
 <a class="lang-card" href="Rust">
   <span class="lang-badge rs">RS</span>
   <p class="lang-name">Rust</p>
-  <p class="lang-meta">60 lessons · foundations to systems and blockchain</p>
+  <p class="lang-meta">60 lessons · systems to blockchain · interviews &amp; capstone</p>
   <span class="lang-status complete">Complete</span>
 </a>
 

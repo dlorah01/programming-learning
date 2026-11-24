@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 19 — Generics, trait bounds, and monomorphization"
 ---
 

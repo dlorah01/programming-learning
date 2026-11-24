@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Rust: from foundations to systems and blockchain infrastructure"
 ---
 

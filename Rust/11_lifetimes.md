@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 11 — Lifetimes: annotations, elision, structs that borrow, and 'static"
 ---
 

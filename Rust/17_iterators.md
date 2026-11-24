@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 17 — Iterators and adapters"
 ---
 

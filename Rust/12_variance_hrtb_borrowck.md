@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 12 — Variance, higher-ranked bounds, reading borrow-checker diagnostics, hard borrow problems"
 ---
 

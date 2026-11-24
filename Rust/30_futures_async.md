@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 30 — Futures, async/await, and executors"
 ---
 

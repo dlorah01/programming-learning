@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 46 — Databases, configuration, authentication, background jobs"
 ---
 

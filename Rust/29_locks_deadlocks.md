@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 29 — Locks, races, deadlocks"
 ---
 

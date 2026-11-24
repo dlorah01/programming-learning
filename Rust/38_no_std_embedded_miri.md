@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 38 — no_std, embedded basics, and Miri"
 ---
 

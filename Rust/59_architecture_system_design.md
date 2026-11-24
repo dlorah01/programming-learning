@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 59 — Architecture, code review, system design, production reliability"
 ---
 

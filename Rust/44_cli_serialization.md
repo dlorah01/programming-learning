@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "Lesson 44 — CLI tools and serialization"
 ---
 
